@@ -1,0 +1,6 @@
+*.o
+*.mod
+*.pre*
+*.log
+svm_struct_learn
+svm_struct_classify
