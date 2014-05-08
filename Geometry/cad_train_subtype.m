@@ -1,7 +1,11 @@
 % train a 3D model from a set of CAD models
 function cad = cad_train_subtype(subtype)
 
-addpath('/home/yuxiang/Projects/Multitarget_Tracking/PROPACK');
+root_path = pwd;
+cd('../3rd_Party/PROPACK');
+propack_path = pwd;
+addpath(propack_path);
+cd(root_path);
 
 cad.cls = 'car';
 cad.pnames = {'head', 'left', 'right', 'front', 'back', 'tail', 'roof'};
