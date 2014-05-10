@@ -42,8 +42,7 @@ for i = 1:N
                     elevation(count) = e;
                     distance(count) = d;
                     cad_index = record.objects(j).cad_index;
-                    rescale = 0.8;
-                    x = project_3d(rescale*cad(cad_index).vertices, record.objects(j));
+                    x = project_3d(cad(cad_index).vertices, record.objects(j));
                     width(count) = max(x(:,1)) - min(x(:,1));
                     height(count) = max(x(:,2)) - min(x(:,2));
                 end

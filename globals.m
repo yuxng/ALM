@@ -1,6 +1,6 @@
 function opt = globals()
 
-opt.pascal3d = '/home/ma/yxiang/Projects/PASCAL3D+';
+opt.pascal3d = '/home/yuxiang/Projects/Pose_Dataset/PASCAL3D+_release1.1';
 
 opt.path_img_pascal = [opt.pascal3d '/Images/%s_pascal'];
 opt.path_ann_pascal = [opt.pascal3d '/Annotations/%s_pascal'];

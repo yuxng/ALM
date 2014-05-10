@@ -2,11 +2,11 @@ function display_result
 
 cls = 'car';
 cls_data = 'val';
-dat_file = sprintf('data/%s.tst', cls_data);
-pre_file = sprintf('data/%s.pre', 'val_wrap');
+dat_file = sprintf('data/%s_unwrap.dat', cls);
+pre_file = sprintf('data/%s_unwrap.pre', cls);
 
 % load cad model
-cad_file = sprintf('%s.mat', cls);
+cad_file = sprintf('../Geometry/Voxel/%s.mat', cls);
 cad = load(cad_file);
 cad = cad.(cls);
 pnames = cad.pnames;
@@ -45,16 +45,22 @@ for i = 1:N
     
     hold on;
 
-    for k = 1:min(1,num)
+    til = sprintf('%d: ', i);
+    for k = 1:min(1, num)
         % get predicted bounding box
         bbox_pr = examples{k}.bbox;
+        if example.object_label == 1
+            overlap = box_overlap(bbox_pr', example.bbox');
+        else
+            overlap = 0;
+        end
         
         view_label = examples{k}.view_label + 1;
         part2d = cad.parts2d(view_label);
-        if k == 1
-            til = sprintf('%d prediction: a=%.2f, e=%.2f, d=%.2f, score=%.2f', i, part2d.azimuth, part2d.elevation, part2d.distance, examples{k}.energy);
-            title(til);
-        end
+
+        til = sprintf('%sa=%.2f, e=%.2f, d=%.2f, score=%.2f, overlap=%.2f\n', ...
+            til, part2d.azimuth, part2d.elevation, part2d.distance, examples{k}.energy, overlap);
+            
         part_label = examples{k}.part_label;
         for a = 1:part_num-8
             if isempty(part2d.homographies{a}) == 0 && part_label(a,1) ~= 0 && part_label(a,2) ~= 0
@@ -71,10 +77,12 @@ for i = 1:N
 %         bbox_pr(3) = min(size(I,2), bbox_pr(3));
 %         bbox_pr(4) = min(size(I,1), bbox_pr(4));
         bbox_draw = [bbox_pr(1), bbox_pr(2), bbox_pr(3)-bbox_pr(1), bbox_pr(4)-bbox_pr(2)];
-        rectangle('Position', bbox_draw, 'EdgeColor', 'g', 'LineWidth', 2);                
+        rectangle('Position', bbox_draw, 'EdgeColor', 'g', 'LineWidth', 2);
+        text(bbox_draw(1), bbox_draw(2), num2str(k), 'BackgroundColor', 'r');
         line([bbox_pr(1) bbox_pr(1)], [bbox_pr(2) bbox_pr(4)], 'Color', 'g', 'LineWidth', 2);
     end
     
+    title(til);
     subplot(4, 4, ind);
     hold off;
 end

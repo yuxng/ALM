@@ -4,7 +4,7 @@ function show_annotation_file(cls)
 path_file = sprintf('data/%s_wrap.dat', cls);
 
 % load CAD model
-object = load(sprintf('../Geometry/Aspect/%s.mat', cls));
+object = load(sprintf('../Geometry/Voxel/%s.mat', cls));
 cad = object.(cls);
 
 fid = fopen(path_file, 'r');

@@ -1,6 +1,6 @@
 % prepare training data for a aspect layout model of a category
 % cls: object category
-function model_train(cls, cls_data, subtype, is_imagenet)
+function model_train_voxel(cls, cls_data, subtype, is_imagenet)
 
 if nargin < 2
     subtype = [];
@@ -22,12 +22,12 @@ cd(root_path);
 
 is_flip = 0;
 % small number for debugging
-maxnum = 32;
+maxnum = inf;
 
 % load cad model, currently only one cad model for all the categories
 cad_num = 1;
 cad = cell(cad_num,1);
-object = load(sprintf('../Geometry/Aspect/%s.mat', cls_data));
+object = load(sprintf('../Geometry/Voxel/%s.mat', cls_data));
 cad{1} = object.(cls_data);
 
 % write cad model to file
@@ -83,16 +83,16 @@ write_data(filename, pos, neg);
 
 
 % % sample negative training images for VOC pascal
-fprintf('Randomize negative PASCAL samples\n');
-maxnum = 32;
-neg = rand_negative(cls, maxnum);
-fprintf('%d negative samples\n', numel(neg));
-
-% write training samples to file
-fprintf('Writing negative samples\n');
-filename = sprintf('data/%s_neg.dat', cls_data);
-pos = [];
-write_data(filename, pos, neg);
+% fprintf('Randomize negative PASCAL samples\n');
+% maxnum = inf;
+% neg = rand_negative(cls, maxnum);
+% fprintf('%d negative samples\n', numel(neg));
+% 
+% % write training samples to file
+% fprintf('Writing negative samples\n');
+% filename = sprintf('data/%s_neg.dat', cls_data);
+% pos = [];
+% write_data(filename, pos, neg);
 
 
 % read positive training images
@@ -103,16 +103,22 @@ if is_imagenet == 0
     path_image = sprintf(opt.path_img_pascal, cls);
     path_anno = sprintf(opt.path_ann_pascal, cls);
     ext = 'jpg';
+    
+    pascal_init;
+    [ids, label] = textread(sprintf(VOCopts.imgsetpath, [cls '_train']), '%s%d');
+    ids(label == -1) = [];
+    N = numel(ids);
 else
     path_image = sprintf(opt.path_img_imagenet, cls);
     path_anno = sprintf(opt.path_ann_imagenet, cls);
     ext = 'JPEG';
-end
-files = dir([path_anno '/*.mat']);
-N = numel(files);
-ids = cell(N, 1);
-for i = 1:N
-    ids{i} = files(i).name(1:end-4);
+    
+    files = dir([path_anno '/*.mat']);
+    N = numel(files);
+    ids = cell(N, 1);
+    for i = 1:N
+        ids{i} = files(i).name(1:end-4);
+    end    
 end
 
 count = 0;
@@ -146,23 +152,9 @@ for i = 1:N
         view_label = find_closest_view(cad, object);
         part2d = cad.parts2d(view_label);
         
-        % load aspect layout model
-        cad_index = object.cad_index;
-        filename = fullfile(opt.path_alm, sprintf('%s_%02d.mat', cls, cad_index));
-        if exist(filename) == 0
-            continue;
-        end
-        alm = load(filename);
-        alm = alm.cad;
-        assert(numel(alm.parts) == numel(cad.parts));
-        part_label = zeros(numel(cad.pnames), 2);
-        for k = 1:numel(alm.parts)
-            if isempty(part2d.(cad.pnames{k})) == 0
-                part_label(k,:) = project_3d(alm.parts(k).center, object);
-            end
-        end
         % root location
-        index = find_interval(object.viewpoint.azimuth, cad.view_num) + numel(cad.parts);
+        part_label = zeros(numel(cad.pnames), 2);
+        index = find_interval(object.viewpoint.azimuth, cad.view_num);
         if is_occld_trunc(object)
             part_label(index,:) = part2d.centers(index,:) - [cad.viewport/2 cad.viewport/2] + [object.viewpoint.px object.viewpoint.py];
         else
@@ -295,15 +287,9 @@ for i = 1:N
     pos_flip(i).part_label = zeros(part_num, 2);
     for j = 1:part_num
         if pos(i).part_label(j,1) ~= 0 || pos(i).part_label(j,2) ~= 0
-            index = cad.symmetry(j);
-            if index ~= -1
-                pos_flip(i).part_label(index,1) = width - pos(i).part_label(j,1) + 1;
-                pos_flip(i).part_label(index,2) = pos(i).part_label(j,2);
-            else
-                index = find_interval(azimuth, cad.view_num);
-                pos_flip(i).part_label(index+numel(cad.parts),1) = width - pos(i).part_label(j,1) + 1;
-                pos_flip(i).part_label(index+numel(cad.parts),2) = pos(i).part_label(j,2);
-            end
+            index = find_interval(azimuth, cad.view_num);
+            pos_flip(i).part_label(index,1) = width - pos(i).part_label(j,1) + 1;
+            pos_flip(i).part_label(index,2) = pos(i).part_label(j,2);
         end
     end
     
@@ -359,3 +345,27 @@ for i = 1:length(ids)
         neg(count).occlusion = [];
     end
 end
+
+% project the CAD model to generate aspect part locations
+function bbox = generate_bbox(cad, part2d, part_label)
+
+pnames = cad.pnames;
+
+x1 = inf;
+x2 = -inf;
+y1 = inf;
+y2 = -inf;
+for i = 1:numel(pnames)
+    part = part2d.(pnames{i});
+    center = part_label(i,:);
+    if isempty(part) == 0
+        part = part + repmat(center, size(part,1), 1);
+        x1 = min([x1; part(:,1)]);
+        x2 = max([x2; part(:,1)]);
+        y1 = min([y1; part(:,2)]);
+        y2 = max([y2; part(:,2)]);
+    end
+end
+
+% build the bounding box
+bbox = [x1 y1 x2-x1 y2-y1];

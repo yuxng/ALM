@@ -2,7 +2,7 @@
 function cad = cad_train_subtype(subtype)
 
 root_path = pwd;
-cd('../3rd_Party/PROPACK');
+cd('../../3rd_Party/PROPACK');
 addpath(pwd);
 cd(root_path);
 
@@ -111,17 +111,12 @@ cad.parts2d = parts2d;
 function [azimuth, elevation, distance] = discretize_viewpoint(cad)
 
 azimuth = 0:15:345;
-% azimuth = 0:22.5:337.5;
 
 [~, e_imagenet, d_imagenet, w_imagenet] = viewpoint_distribution(cad.cls, 1);
 [~, e_pascal, d_pascal, w_pascal] = viewpoint_distribution(cad.cls, 0);
 e = [e_imagenet e_pascal];
 d = [d_imagenet d_pascal];
 w = [w_imagenet w_pascal];
-
-% e = e_pascal;
-% d = d_pascal;
-% w = w_pascal;
 
 elevation = mean(e);
 
