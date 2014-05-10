@@ -1,6 +1,11 @@
 % build the mean voxel model
 function cad = cad_train(cls)
 
+root_path = pwd;
+cd('../..');
+addpath(pwd);
+cd(root_path);
+
 opt = globals();
 grid_size = 25;
 

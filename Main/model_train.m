@@ -15,14 +15,19 @@ if nargin < 4
     is_imagenet = 0;
 end
 
-is_flip = 1;
+root_path = pwd;
+cd('..');
+addpath(pwd);
+cd(root_path);
+
+is_flip = 0;
 % small number for debugging
-maxnum = inf;
+maxnum = 32;
 
 % load cad model, currently only one cad model for all the categories
 cad_num = 1;
 cad = cell(cad_num,1);
-object = load(sprintf('%s.mat', cls_data));
+object = load(sprintf('../Geometry/Aspect/%s.mat', cls_data));
 cad{1} = object.(cls_data);
 
 % write cad model to file
@@ -78,16 +83,16 @@ write_data(filename, pos, neg);
 
 
 % % sample negative training images for VOC pascal
-% fprintf('Randomize negative PASCAL samples\n');
-% maxnum = inf;
-% neg = rand_negative(cls, maxnum);
-% fprintf('%d negative samples\n', numel(neg));
-% 
-% % write training samples to file
-% fprintf('Writing negative samples\n');
-% filename = sprintf('data/%s_neg.dat', cls_data);
-% pos = [];
-% write_data(filename, pos, neg);
+fprintf('Randomize negative PASCAL samples\n');
+maxnum = 32;
+neg = rand_negative(cls, maxnum);
+fprintf('%d negative samples\n', numel(neg));
+
+% write training samples to file
+fprintf('Writing negative samples\n');
+filename = sprintf('data/%s_neg.dat', cls_data);
+pos = [];
+write_data(filename, pos, neg);
 
 
 % read positive training images
@@ -98,28 +103,20 @@ if is_imagenet == 0
     path_image = sprintf(opt.path_img_pascal, cls);
     path_anno = sprintf(opt.path_ann_pascal, cls);
     ext = 'jpg';
-
-    filename = sprintf('ids_%s.mat', cls);
-    object = load(filename);
-    ids = object.ids_train;
 else
     path_image = sprintf(opt.path_img_imagenet, cls);
     path_anno = sprintf(opt.path_ann_imagenet, cls);
     ext = 'JPEG';
-
-    files = dir([path_anno '/*.mat']);
-    N = numel(files);
-    ids = cell(N, 1);
-    for i = 1:N
-        ids{i} = files(i).name(1:end-4);
-    end
 end
-N = numel(ids);
+files = dir([path_anno '/*.mat']);
+N = numel(files);
+ids = cell(N, 1);
+for i = 1:N
+    ids{i} = files(i).name(1:end-4);
+end
 
 count = 0;
 scale = 1.5;
-vnum = 8;
-count_view = zeros(vnum, 1);
 for i = 1:N
     file_ann = sprintf('%s/%s.mat', path_anno, ids{i});
     image = load(file_ann);
@@ -149,12 +146,9 @@ for i = 1:N
         view_label = find_closest_view(cad, object);
         part2d = cad.parts2d(view_label);
         
-        view_index = find_interval(part2d.azimuth, vnum);
-        count_view(view_index) = count_view(view_index) + 1;
-        
         % load aspect layout model
         cad_index = object.cad_index;
-        filename = sprintf('../../Pose_Dataset/ALM/car_%02d.mat', cad_index);
+        filename = fullfile(opt.path_alm, sprintf('%s_%02d.mat', cls, cad_index));
         if exist(filename) == 0
             continue;
         end
@@ -253,7 +247,6 @@ for i = 1:N
         end
     end
 end
-disp(count_view);
 
 % flip positive samples
 function pos_flip = flip_positive(pos, cads)

@@ -3,8 +3,11 @@ function cad = cad_train_subtype(subtype)
 
 root_path = pwd;
 cd('../3rd_Party/PROPACK');
-propack_path = pwd;
-addpath(propack_path);
+addpath(pwd);
+cd(root_path);
+
+cd('../..');
+addpath(pwd);
 cd(root_path);
 
 cad.cls = 'car';

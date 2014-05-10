@@ -8,3 +8,4 @@ opt.path_img_imagenet = [opt.pascal3d '/Images/%s_imagenet'];
 opt.path_ann_imagenet = [opt.pascal3d '/Annotations/%s_imagenet'];
 opt.path_pascal = [opt.pascal3d '/PASCAL/VOCdevkit'];
 opt.path_cad = [opt.pascal3d '/CAD/%s.mat'];
+opt.path_alm = [opt.pascal3d '/ALM'];

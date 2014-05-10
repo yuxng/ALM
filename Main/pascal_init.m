@@ -1,7 +1,8 @@
 % initialize the PASCAL development kit
 
 tmp = pwd;
-cd('/home/yuxiang/Projects/Pose_Dataset/PASCAL/VOCdevkit');
+opt = globals;
+cd(opt.path_pascal);
 addpath([cd '/VOCcode']);
 VOCinit;
 cd(tmp);

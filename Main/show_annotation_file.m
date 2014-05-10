@@ -1,11 +1,10 @@
 % show image with annotation
 function show_annotation_file(cls)
 
-path_file = sprintf('data/%s_wrap_flip.dat', cls);
-% path_file = sprintf('/home/yuxiang/Projects/Aspect_Layout_Model_new/Struct_SVM/data_debug/car_wrap.dat');
+path_file = sprintf('data/%s_wrap.dat', cls);
 
 % load CAD model
-object = load(sprintf('%s.mat', cls));
+object = load(sprintf('../Geometry/Aspect/%s.mat', cls));
 cad = object.(cls);
 
 fid = fopen(path_file, 'r');
