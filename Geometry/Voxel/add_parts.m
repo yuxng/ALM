@@ -15,6 +15,7 @@ cad.occ_per = 0.8;
 cad.azimuth = azimuth;
 cad.elevation = elevation;
 cad.distance = distance;
+cad.distance_front_root = find_distance_front(cad, 19);
 
 % first try the whole object as a part
 view_num = cad.view_num;
@@ -62,3 +63,11 @@ diff = abs(w - cad.distance_maxpixel);
 dmax = d(index);
 
 distance = exp(log(dmax):0.1:log(dmin));
+
+% find the distance for frontal view
+function distance_front = find_distance_front(cad, dis)
+
+distance = cad.distance;
+diff = abs(distance - dis);
+[~, index] = min(diff);
+distance_front = distance(index);

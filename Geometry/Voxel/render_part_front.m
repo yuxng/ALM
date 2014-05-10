@@ -18,7 +18,7 @@ for i = 1:N
         view_index = parts(i).view_index;
         a = (360/view_num) * (view_index - 1);
         e = mean(cad.elevation);
-        d = mean(cad.distance);        
+        d = cad.distance_front_root;        
     else
         % TO DO
     end

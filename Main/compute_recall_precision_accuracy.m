@@ -17,12 +17,12 @@ M = numel(ids);
 
 % load cad model
 cls_data = [cls ''];
-cad_file = sprintf('%s.mat', cls_data);
+cad_file = sprintf('../Geometry/Voxel/%s.mat', cls_data);
 cad = load(cad_file);
 cad = cad.(cls_data);
 
 % read detections
-pre_file = 'data/val_latent_0.pre';
+pre_file = 'data/val.pre';
 fid = fopen(pre_file, 'r');
 examples = cell(M,1);
 for i = 1:M
