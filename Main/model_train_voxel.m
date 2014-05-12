@@ -22,7 +22,8 @@ cd(root_path);
 
 is_flip = 0;
 % small number for debugging
-maxnum = inf;
+maxnum = 12;
+data_dir = 'data_debug';
 
 % load cad model, currently only one cad model for all the categories
 cad_num = 1;
@@ -31,7 +32,7 @@ object = load(sprintf('../Geometry/Voxel/%s.mat', cls_data));
 cad{1} = object.(cls_data);
 
 % write cad model to file
-filename = sprintf('data/%s.cad', cls_data);
+filename = sprintf('%s/%s.cad', data_dir, cls_data);
 write_cad(filename, cad);
 
 % wrap positive training images
@@ -51,9 +52,9 @@ neg = [];
 % write training samples to file
 fprintf('Writing wrapped positives\n');
 if is_flip
-    filename = sprintf('data/%s_wrap_flip.dat', cls_data);
+    filename = sprintf('%s/%s_wrap_flip.dat', data_dir, cls_data);
 else
-    filename = sprintf('data/%s_wrap.dat', cls_data);
+    filename = sprintf('%s/%s_wrap.dat', data_dir, cls_data);
 end
 write_data(filename, pos, neg);
 
@@ -75,24 +76,24 @@ neg = [];
 % write training samples to file
 fprintf('Writing unwrapped positives\n');
 if is_flip
-    filename = sprintf('data/%s_unwrap_flip.dat', cls_data);    
+    filename = sprintf('%s/%s_unwrap_flip.dat', data_dir, cls_data);    
 else
-    filename = sprintf('data/%s_unwrap.dat', cls_data);
+    filename = sprintf('%s/%s_unwrap.dat', data_dir, cls_data);
 end
 write_data(filename, pos, neg);
 
 
-% % sample negative training images for VOC pascal
-% fprintf('Randomize negative PASCAL samples\n');
-% maxnum = 24;
-% neg = rand_negative(cls, maxnum);
-% fprintf('%d negative samples\n', numel(neg));
-% 
-% % write training samples to file
-% fprintf('Writing negative samples\n');
-% filename = sprintf('data/%s_neg.dat', cls_data);
-% pos = [];
-% write_data(filename, pos, neg);
+% sample negative training images for VOC pascal
+fprintf('Randomize negative PASCAL samples\n');
+maxnum = 24;
+neg = rand_negative(cls, maxnum);
+fprintf('%d negative samples\n', numel(neg));
+
+% write training samples to file
+fprintf('Writing negative samples\n');
+filename = sprintf('%s/%s_neg.dat', data_dir, cls_data);
+pos = [];
+write_data(filename, pos, neg);
 
 
 % read positive training images
