@@ -56,7 +56,8 @@ cad.parts2d = parts2d;
 % discretize the viewpoint
 function [azimuth, elevation, distance] = discretize_viewpoint(cad)
 
-azimuth = 0:15:345;
+% azimuth = 0:15:345;
+azimuth = 0:45:315;
 
 [~, e_imagenet, d_imagenet, w_imagenet] = viewpoint_distribution(cad.cls, 1);
 [~, e_pascal, d_pascal, w_pascal] = viewpoint_distribution(cad.cls, 0);

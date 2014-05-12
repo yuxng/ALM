@@ -36,7 +36,7 @@ for i = 1:part_num
     w = model.weights(count:count-1+b0*b1*32);
     w = reshape(w, b1, b0, 32);
     im = visualizeHOG(w, 0);
-    subplot(4, 4, i);
+    subplot(8, 8, i);
     imagesc(im); 
     h = title(pnames{i});
     set(h, 'FontSize', 16);

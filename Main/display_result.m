@@ -62,7 +62,7 @@ for i = 1:N
             til, part2d.azimuth, part2d.elevation, part2d.distance, examples{k}.energy, overlap);
             
         part_label = examples{k}.part_label;
-        for a = 1:part_num-8
+        for a = 1:part_num
             if isempty(part2d.homographies{a}) == 0 && part_label(a,1) ~= 0 && part_label(a,2) ~= 0
                 plot(part_label(a,1), part_label(a,2), 'ro');
                 % render parts
