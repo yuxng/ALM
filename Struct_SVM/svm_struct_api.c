@@ -575,12 +575,15 @@ LABEL* classify_struct_example(PATTERN x, int *label_num, int flag, STRUCTMODEL 
         /* part not occluded */
         if(cad->objects2d[v]->occluded[i] == 0)
         {
-          /* get homography */
-          homography = cad->objects2d[v]->homographies[i];
-          /* rectify image */
-          rectified_image = rectify_image(x.image, homography, T);
-          /* compute HOG features */
-          hog = compute_hog_features(rectified_image, cad->part_templates[i]->sbin);
+          if(cad->is_2dpart == 0 || cad->is_root[i] == 1 || cad->is_root[i-1] == 1)
+          {
+            /* get homography */
+            homography = cad->objects2d[v]->homographies[i];
+            /* rectify image */
+            rectified_image = rectify_image(x.image, homography, T);
+            /* compute HOG features */
+            hog = compute_hog_features(rectified_image, cad->part_templates[i]->sbin);
+          }
 
           /* compute the unary potential by convolution */
           template.dims_num = hog.dims_num;
@@ -598,8 +601,11 @@ LABEL* classify_struct_example(PATTERN x, int *label_num, int flag, STRUCTMODEL 
           width = (int)round((double)(x.image.dims[1])/(double)(cad->part_templates[i]->sbin));
           potentials[i] = rectify_potential(hog_response, width, height, cad->part_templates[i]->sbin, T);
 
-          free_cumatrix(&rectified_image);
-          free_cumatrix(&hog);
+          if(cad->is_2dpart == 0 || cad->is_root[i] == 1 || i == cad->part_num-1 || cad->is_root[i+1] == 1)
+          {
+            free_cumatrix(&rectified_image);
+            free_cumatrix(&hog);
+          }
           free_cumatrix(&template);
           free_cumatrix(&hog_response);
         }
@@ -890,11 +896,14 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, ST
         /* part not self-occluded */
         if(cad->objects2d[v]->occluded[i] == 0)
         {
-          homography = cad->objects2d[v]->homographies[i];
-          /* rectify image */
-          rectified_image = rectify_image(x.image, homography, T);
-          /* compute HOG features */
-          hog = compute_hog_features(rectified_image, cad->part_templates[i]->sbin);
+          if(cad->is_2dpart == 0 || cad->is_root[i] == 1 || cad->is_root[i-1] == 1)
+          {
+            homography = cad->objects2d[v]->homographies[i];
+            /* rectify image */
+            rectified_image = rectify_image(x.image, homography, T);
+            /* compute HOG features */
+            hog = compute_hog_features(rectified_image, cad->part_templates[i]->sbin);
+          }
 
           /* compute the unary potential by convolution */
           template.dims_num = hog.dims_num;
@@ -912,8 +921,11 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, ST
           width = (int)round((double)(x.image.dims[1])/(double)(cad->part_templates[i]->sbin));
           potentials[i] = rectify_potential(hog_response, width, height, cad->part_templates[i]->sbin, T);
 
-          free_cumatrix(&rectified_image);
-          free_cumatrix(&hog);
+          if(cad->is_2dpart == 0 || cad->is_root[i] == 1 || i == cad->part_num-1 || cad->is_root[i+1] == 1)
+          {
+            free_cumatrix(&rectified_image);
+            free_cumatrix(&hog);
+          }
           free_cumatrix(&template);
           free_cumatrix(&hog_response);
         }
@@ -1059,11 +1071,14 @@ LABEL find_most_positive_constraint(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_
         /* part not self-occluded */
         if(cad->objects2d[v]->occluded[i] == 0)
         {
-          homography = cad->objects2d[v]->homographies[i];
-          /* rectify image */
-          rectified_image = rectify_image(x.image, homography, T);
-          /* compute HOG features */
-          hog = compute_hog_features(rectified_image, cad->part_templates[i]->sbin);
+          if(cad->is_2dpart == 0 || cad->is_root[i] == 1 || cad->is_root[i-1] == 1)
+          {
+            homography = cad->objects2d[v]->homographies[i];
+            /* rectify image */
+            rectified_image = rectify_image(x.image, homography, T);
+            /* compute HOG features */
+            hog = compute_hog_features(rectified_image, cad->part_templates[i]->sbin);
+          }
 
           /* compute the unary potential by convolution */
           template.dims_num = hog.dims_num;
@@ -1081,8 +1096,11 @@ LABEL find_most_positive_constraint(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_
           width = (int)round((double)(x.image.dims[1])/(double)(cad->part_templates[i]->sbin));
           potentials[i] = rectify_potential(hog_response, width, height, cad->part_templates[i]->sbin, T);
 
-          free_cumatrix(&rectified_image);
-          free_cumatrix(&hog);
+          if(cad->is_2dpart == 0 || cad->is_root[i] == 1 || i == cad->part_num-1 || cad->is_root[i+1] == 1)
+          {
+            free_cumatrix(&rectified_image);
+            free_cumatrix(&hog);
+          }
           free_cumatrix(&template);
           free_cumatrix(&hog_response);
         }
@@ -1741,7 +1759,6 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
   }
   else
   {
-
     /* for each part, do maximum pooling */
     for(part_index = 0; part_index < cad->part_num; part_index++)
     {
@@ -1818,7 +1835,6 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
         doc = create_example(1, 0, 1, 1, fvec);
         score = classify_example(sm->svm_model, doc);
 
-      
         if(score > part_score)
         {
           part_score = score;
@@ -1851,11 +1867,14 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
     cy = y.part_label[cad->part_num+i];
     if(cad->objects2d[y.view_label]->occluded[i] == 0 && cx != 0 && cy != 0)
     {
-      homography = cad->objects2d[y.view_label]->homographies[i];
-      /* rectify image */
-      rectified_image = rectify_image(x.image, homography, T);
-      /* compute HOG features */
-      hog = compute_hog_features(rectified_image, cad->part_templates[i]->sbin);
+      if(cad->is_2dpart == 0 || cad->is_root[i] == 1 || cad->is_root[i-1] == 1)
+      {
+        homography = cad->objects2d[y.view_label]->homographies[i];
+        /* rectify image */
+        rectified_image = rectify_image(x.image, homography, T);
+        /* compute HOG features */
+        hog = compute_hog_features(rectified_image, cad->part_templates[i]->sbin);
+      }
 
       /* transform part center */
       cxprim = (int)round((T[0]*cx + T[3]*cy + T[6])/(float)cad->part_templates[i]->sbin) + FEATURE_INDEX[part_feature_index[i]][0];
@@ -1877,8 +1896,11 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
       }
       /* skip occlusion weight */
       wnum++;
-      free_cumatrix(&rectified_image);
-      free_cumatrix(&hog);
+      if(cad->is_2dpart == 0 || cad->is_root[i] == 1 || i == cad->part_num-1 || cad->is_root[i+1] == 1)
+      {
+        free_cumatrix(&rectified_image);
+        free_cumatrix(&hog);
+      }
       free_cumatrix(&cropped_hog);
     }
     else /* self-occluded part */

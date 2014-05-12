@@ -28,6 +28,9 @@ CAD* read_cad(FILE *fp, int hog_length)
   fscanf(fp, "%d", &part_num);
   cad->part_num = part_num;
 
+  /* read is_2dpart flag */
+  fscanf(fp, "%d", &(cad->is_2dpart));
+
   cad->is_root = (int*)malloc(sizeof(int)*part_num);
   if(cad->is_root == NULL)
   {

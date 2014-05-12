@@ -2,6 +2,8 @@
 function parts2d_front = render_part_front(cad)
 
 view_num = cad.view_num;
+subpart_num = cad.subpart_num;
+subpart_size = cad.subpart_size;
 viewport = cad.viewport;
 hog_size = cad.hog_size;
 
@@ -14,15 +16,17 @@ parts2d_front(N).distance = 0;
 
 for i = 1:N
     % determine the frontal view of the part
+    view_index = parts(i).view_index;
+    a = (360/view_num) * (view_index - 1);
+    e = mean(cad.elevation);    
     if cad.roots(i) == 1
-        view_index = parts(i).view_index;
-        a = (360/view_num) * (view_index - 1);
-        e = mean(cad.elevation);
         d = cad.distance_front_root;        
+        x3d = cad.parts(i).x3d;
     else
-        % TO DO
+        d = cad.distance_front_part;
+        parent = floor((i-1)/(subpart_num+1))*(subpart_num+1) + 1;
+        x3d = cad.parts(parent).x3d;
     end
-    x3d = cad.parts(i).x3d;
     x2d = project_part_points(x3d, a, e, d, viewport);
     
     % build the part shape
@@ -30,8 +34,23 @@ for i = 1:N
     x2 = max(x2d(:,1));
     y1 = min(x2d(:,2));
     y2 = max(x2d(:,2));
-    part = [x1 y1; x1 y2; x2 y2; x2 y1; x1 y1];
-    c = [(x1+x2)/2 (y1+y2)/2];
+    
+    if cad.roots(i) == 1
+        part = [x1 y1; x1 y2; x2 y2; x2 y1; x1 y1];
+        c = [(x1+x2)/2 (y1+y2)/2];
+    else
+        index = mod(i-1, subpart_num+1);
+        index_x = floor((index-1)/subpart_size(1));
+        index_y = mod(index-1, subpart_size(1));
+        width = x2 - x1;
+        height = y2 - y1;
+        x1_part = x1 + (width / subpart_size(1)) * index_y;
+        x2_part = x1_part + width / subpart_size(1);
+        y1_part = y1 + (height / subpart_size(2)) * index_x;
+        y2_part = y1_part + height / subpart_size(2);
+        part = [x1_part y1_part; x1_part y2_part; x2_part y2_part; x2_part y1_part; x1_part y1_part];
+        c = [(x1_part+x2_part)/2 (y1_part+y2_part)/2];        
+    end
     
     % assign the front part
     parts2d_front(i).vertices = part - repmat(c, size(part,1), 1);

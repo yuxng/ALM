@@ -14,12 +14,14 @@ parts2d(na*ne*nd).distance = d(end);
 pnames = cad.pnames;
 parts = cad.parts;
 N = numel(parts);
+subpart_num = cad.subpart_num;
+subpart_size = cad.subpart_size;
 
 count = 0;
 for n = 1:na
     for m = 1:ne
         % visibility of the cad model under the current viewpoint
-        visibility = check_visibility(cad, a(n), e(m), mean(d));
+        % visibility = check_visibility(cad, a(n), e(m), mean(d));
         for o = 1:nd
             % initialize part
             count = count+1;
@@ -50,13 +52,25 @@ for n = 1:na
                         flag = 0;
                     end
                 else
-                    flag = check_visibility_part(visibility, parts(i).grid, cad.occ_per);
+                    % flag = check_visibility_part(visibility, parts(i).grid, cad.occ_per);
+                    view_index = find_interval(a(n), cad.view_num);
+                    if view_index == parts(i).view_index
+                        flag = 1;
+                    else
+                        flag = 0;
+                    end                    
                 end
                 if flag == 0
                     continue;
                 end
-                % projection
-                x3d = parts(i).x3d;
+
+                % projection                
+                if cad.roots(i) == 1
+                    x3d = parts(i).x3d;
+                else
+                    parent = floor((i-1)/(subpart_num+1))*(subpart_num+1) + 1;
+                    x3d = parts(parent).x3d;
+                end
                 x2d = project_part_points(x3d, a(n), e(m), d(o), cad.viewport);
 
                 % build the part shape
@@ -64,8 +78,23 @@ for n = 1:na
                 x2 = max(x2d(:,1));
                 y1 = min(x2d(:,2));
                 y2 = max(x2d(:,2));
-                p = [x1 y1; x1 y2; x2 y2; x2 y1; x1 y1];
-                c = [(x1+x2)/2 (y1+y2)/2];
+
+                if cad.roots(i) == 1
+                    p = [x1 y1; x1 y2; x2 y2; x2 y1; x1 y1];
+                    c = [(x1+x2)/2 (y1+y2)/2];
+                else
+                    index = mod(i-1, subpart_num+1);
+                    index_x = floor((index-1)/subpart_size(1));
+                    index_y = mod(index-1, subpart_size(1));
+                    width = x2 - x1;
+                    height = y2 - y1;
+                    x1_part = x1 + (width / subpart_size(1)) * index_y;
+                    x2_part = x1_part + width / subpart_size(1);
+                    y1_part = y1 + (height / subpart_size(2)) * index_x;
+                    y2_part = y1_part + height / subpart_size(2);
+                    p = [x1_part y1_part; x1_part y2_part; x2_part y2_part; x2_part y1_part; x1_part y1_part];
+                    c = [(x1_part+x2_part)/2 (y1_part+y2_part)/2];        
+                end                
 
                 % translate the part center to the orignal
                 parts2d(count).(pnames{i}) = p - repmat(c, size(p,1), 1);

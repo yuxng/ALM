@@ -2,9 +2,12 @@
 function cad = add_parts(cad)
 
 % initialize parameters
+cad.is_2dpart = 1;
 cad.distance_minpixel = 30;
 cad.distance_maxpixel = 800;
 cad.view_num = 8;
+cad.subpart_num = 6;
+cad.subpart_size = [3, 2];
 cad.hog_size = 6;
 cad.viewport = 3000;
 cad.occ_per = 0.8;
@@ -16,17 +19,28 @@ cad.azimuth = azimuth;
 cad.elevation = elevation;
 cad.distance = distance;
 cad.distance_front_root = find_distance_front(cad, 19);
+cad.distance_front_part = find_distance_front(cad, 13);
 
 % first try the whole object as a part
 view_num = cad.view_num;
-cad.pnames = cell(1, view_num);
+subpart_num = cad.subpart_num;
+cad.pnames = cell(1, view_num*(1+subpart_num));
+cad.roots = zeros(1, view_num*(1+subpart_num));
 for i = 1:view_num
-    cad.pnames{i} = sprintf('view%d', i);
-    cad.parts(i).grid = cad.grid;
-    cad.parts(i).x3d = compute_part_points(cad.grid);
-    cad.parts(i).view_index = i;
+    index = (i-1)*(1+subpart_num) + 1;
+    cad.pnames{index} = sprintf('view%d', i);
+    cad.parts(index).grid = cad.grid;
+    cad.parts(index).x3d = compute_part_points(cad.grid);
+    cad.parts(index).view_index = i;
+    cad.roots(index) = 1;
+    for j = 1:subpart_num
+        cad.pnames{index+j} = sprintf('view%d_%d', i, j);
+        cad.parts(index+j).grid = [];
+        cad.parts(index+j).x3d = [];
+        cad.parts(index+j).view_index = i;
+        cad.roots(index+j) = 0;        
+    end
 end
-cad.roots = ones(1, view_num);
 
 % render part from its frontal view
 fprintf('Render 2d part front\n');

@@ -22,7 +22,7 @@ cd(root_path);
 
 is_flip = 0;
 % small number for debugging
-maxnum = inf;
+maxnum = 12;
 
 % load cad model, currently only one cad model for all the categories
 cad_num = 1;
@@ -82,17 +82,17 @@ end
 write_data(filename, pos, neg);
 
 
-% % sample negative training images for VOC pascal
-% fprintf('Randomize negative PASCAL samples\n');
-% maxnum = inf;
-% neg = rand_negative(cls, maxnum);
-% fprintf('%d negative samples\n', numel(neg));
-% 
-% % write training samples to file
-% fprintf('Writing negative samples\n');
-% filename = sprintf('data/%s_neg.dat', cls_data);
-% pos = [];
-% write_data(filename, pos, neg);
+% sample negative training images for VOC pascal
+fprintf('Randomize negative PASCAL samples\n');
+maxnum = 24;
+neg = rand_negative(cls, maxnum);
+fprintf('%d negative samples\n', numel(neg));
+
+% write training samples to file
+fprintf('Writing negative samples\n');
+filename = sprintf('data/%s_neg.dat', cls_data);
+pos = [];
+write_data(filename, pos, neg);
 
 
 % read positive training images
@@ -152,14 +152,47 @@ for i = 1:N
         view_label = find_closest_view(cad, object);
         part2d = cad.parts2d(view_label);
         
-        % root location
+        % part label
         part_label = zeros(numel(cad.pnames), 2);
-        index = find_interval(object.viewpoint.azimuth, cad.view_num);
+        
+        % determine the bounding box
         if is_occld_trunc(object)
-            part_label(index,:) = part2d.centers(index,:) - [cad.viewport/2 cad.viewport/2] + [object.viewpoint.px object.viewpoint.py];
+            index = find_interval(object.viewpoint.azimuth, cad.view_num);
+            root_index = find(cad.roots == 1);
+            ind = root_index(index);
+            center = part2d.centers(ind,:) - [cad.viewport/2 cad.viewport/2] + [object.viewpoint.px object.viewpoint.py];
+            part = part2d.(cad.pnames{ind});
+            part = part + repmat(center, size(part,1), 1);
+            x1 = min(part(:,1));
+            x2 = max(part(:,1));
+            y1 = min(part(:,2));
+            y2 = max(part(:,2));
         else
             bbox = object.bbox;
-            part_label(index,:) = [(bbox(1) + bbox(3))/2 (bbox(2) + bbox(4))/2];
+            x1 = bbox(1);
+            x2 = bbox(3);
+            y1 = bbox(2);
+            y2 = bbox(4);
+        end
+        
+        for k = 1:numel(cad.pnames)
+            if isempty(part2d.(cad.pnames{k})) == 1
+                continue;
+            end
+            if cad.roots(k) == 1
+                part_label(k,:) = [(x1+x2)/2 (y1+y2)/2];
+            else
+                index = mod(k-1, cad.subpart_num+1);
+                index_x = floor((index-1)/cad.subpart_size(1));
+                index_y = mod(index-1, cad.subpart_size(1));
+                width = x2 - x1;
+                height = y2 - y1;
+                x1_part = x1 + (width / cad.subpart_size(1)) * index_y;
+                x2_part = x1_part + width / cad.subpart_size(1);
+                y1_part = y1 + (height / cad.subpart_size(2)) * index_x;
+                y2_part = y1_part + height / cad.subpart_size(2);
+                part_label(k,:) = [(x1_part+x2_part)/2 (y1_part+y2_part)/2];        
+            end               
         end
  
         count = count + 1;
@@ -358,7 +391,7 @@ y2 = -inf;
 for i = 1:numel(pnames)
     part = part2d.(pnames{i});
     center = part_label(i,:);
-    if isempty(part) == 0
+    if isempty(part) == 0 && cad.roots(i) == 1
         part = part + repmat(center, size(part,1), 1);
         x1 = min([x1; part(:,1)]);
         x2 = max([x2; part(:,1)]);

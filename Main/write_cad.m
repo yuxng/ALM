@@ -14,6 +14,9 @@ for c = 1:numel(cads)
     % write part number
     part_num = numel(cad.pnames);
     fprintf(fid, '%d\n', part_num);
+    
+    % write is_2dpart flag
+    fprintf(fid, '%d\n', cad.is_2dpart);
 
     % write part names
     for i = 1:part_num

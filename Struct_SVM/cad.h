@@ -51,6 +51,7 @@ typedef struct cad
 {
   /* number of object parts */
   int part_num;
+  int is_2dpart;
   int *is_root;
   /* part names */
   char **part_names;

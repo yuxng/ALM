@@ -12,6 +12,7 @@ cd(root_path);
 
 cad.cls = 'car';
 cad.pnames = {'head', 'left', 'right', 'front', 'back', 'tail', 'roof'};
+cad.is_2dpart = 0;
 cad.distance_minpixel = 30;
 cad.distance_maxpixel = 800;
 cad.view_num = 8;
