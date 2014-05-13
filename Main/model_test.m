@@ -13,6 +13,11 @@ if nargin < 3
     is_imagenet = 0;
 end
 
+root_path = pwd;
+cd('..');
+addpath(pwd);
+cd(root_path);
+
 % read positive test images
 fprintf('Read postive samples\n');
 maxnum = 64;
@@ -35,23 +40,23 @@ if is_imagenet == 0
     path_image = sprintf(opt.path_img_pascal, cls);
     path_anno = sprintf(opt.path_ann_pascal, cls);
     ext = 'jpg';
-
-    filename = sprintf('ids_%s.mat', cls);
-    object = load(filename);
-    ids = object.ids_val;
+    
+    pascal_init;
+    [ids, label] = textread(sprintf(VOCopts.imgsetpath, [cls '_val']), '%s%d');
+    ids(label == -1) = [];
+    N = numel(ids);
 else
     path_image = sprintf(opt.path_img_imagenet, cls);
     path_anno = sprintf(opt.path_ann_imagenet, cls);
     ext = 'JPEG';
-
+    
     files = dir([path_anno '/*.mat']);
     N = numel(files);
     ids = cell(N, 1);
     for i = 1:N
         ids{i} = files(i).name(1:end-4);
-    end
+    end    
 end
-N = numel(ids);
 
 count = 0;
 for i = 1:N

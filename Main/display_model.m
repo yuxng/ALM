@@ -26,22 +26,60 @@ fclose(fid);
 figure;
 count = 1;
 pnames = cad.pnames;
-part_num = numel(pnames);
+% part_num = numel(pnames);
 length = 0;
-for i = 1:part_num
-    b0 = cad.parts2d_front(i).width / 6;
-    b1 = cad.parts2d_front(i).height / 6;
+view_num = cad.view_num;
+for i = 1:view_num
+    index = (i-1)*(1+cad.subpart_num) + 1;
+    b0 = cad.parts2d_front(index).width / 6;
+    b1 = cad.parts2d_front(index).height / 6;
     length = length + b0 * b1 *32;
-    fprintf('part %s, b0 = %d, b1 = %d, length = %d, total = %d\n', pnames{i}, b0, b1, b0*b1*32, length);
+    fprintf('part %s, b0 = %d, b1 = %d, length = %d, total = %d\n', pnames{index}, b0, b1, b0*b1*32, length);
     w = model.weights(count:count-1+b0*b1*32);
     w = reshape(w, b1, b0, 32);
     im = visualizeHOG(w, 0);
-    subplot(8, 8, i);
+    subplot(view_num/2, 4, 2*i-1);
     imagesc(im); 
-    h = title(pnames{i});
+    h = title(pnames{index});
     set(h, 'FontSize', 16);
     colormap gray;
     axis equal;
     axis off;
     count = count + b0*b1*32+1;
+    
+    images = cell(cad.subpart_size(2), cad.subpart_size(1));
+    for j = 1:cad.subpart_num
+        b0 = cad.parts2d_front(index+j).width / 6;
+        b1 = cad.parts2d_front(index+j).height / 6;
+        length = length + b0 * b1 *32;
+        fprintf('part %s, b0 = %d, b1 = %d, length = %d, total = %d\n', pnames{index+j}, b0, b1, b0*b1*32, length);
+        w = model.weights(count:count-1+b0*b1*32);
+        w = reshape(w, b1, b0, 32);
+        im = visualizeHOG(w, 0);
+        index_x = floor((j-1)/cad.subpart_size(1)) + 1;
+        index_y = mod(j-1, cad.subpart_size(1)) + 1;
+        images{index_x, index_y} = im;
+        count = count + b0*b1*32+1;
+    end
+    
+    % construct image
+    A = cell(cad.subpart_size(2), 1);
+    for j = 1:cad.subpart_size(2)
+        A{j} = [];
+        for k = 1:cad.subpart_size(1)
+            A{j} = horzcat(A{j}, images{j,k});
+        end
+    end
+    B = [];
+    for j = 1:cad.subpart_size(2)
+        B = vertcat(B, A{j});
+    end
+    
+    subplot(view_num/2, 4, 2*i);
+    imagesc(B); 
+    h = title([pnames{index} 'part']);
+    set(h, 'FontSize', 16);
+    colormap gray;
+    axis equal;
+    axis off;    
 end
