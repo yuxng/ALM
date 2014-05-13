@@ -54,7 +54,7 @@ for i = 1:N
     aspect = mean(aspects);
 
     areas = h.*w;
-    area = 0.8*mean(areas);
+    area = (0.85/0.8)*mean(areas);
 
     % pick dimensions
     width = sqrt(area/aspect);
