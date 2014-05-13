@@ -40,7 +40,7 @@ extern "C" {
 #include <time.h>
 #include "select_gpu.h"
 
-void random_negative_samples(char *filename, char *filename_prev, char *trainfile_wrap, char *trainfile_unwrap, char *trainfile_negative, char *modelfile, int is_wrap, float *overlaps, int cad_num, CAD **cads);
+void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfile_unwrap, char *trainfile_negative, char *modelfile, int is_wrap, float *overlaps, int cad_num, CAD **cads);
 void data_mining_hard_examples(char *filename, char *trainfile, char *testfile, char *modelfile, SAMPLE testsample, int cad_num, CAD **cads);
 int compare_energy(const void *a, const void *b);
 void read_input_parameters(int, char **, char *, char *, char *, char *, char *, long *, long *, STRUCT_LEARN_PARM *, LEARN_PARM *, KERNEL_PARM *, int *);
@@ -53,7 +53,7 @@ int main (int argc, char* argv[])
 {
   FILE *fp;
   int i, cad_num, iter, flag, num;
-  char filename[256], filename_data[256], filename_prev[256];
+  char filename[256], filename_data[256];
   CAD **cads, *cad;
   SAMPLE sample, sample_negative;  /* training sample */
   LEARN_PARM learn_parm;
@@ -102,13 +102,10 @@ int main (int argc, char* argv[])
   struct_parm.epsilon_init = 100.0;
 
   /***************************************************/
-  /* training with wrapped positives */
+  /* training roots with wrapped positives */
   /***************************************************/
   struct_parm.is_wrap = 1;
-  if(struct_parm.full_model == 0)
-    struct_parm.deep = 0;
-  else
-    struct_parm.deep = 1;
+  struct_parm.deep = 0;
 
   /* intialize the overlaps */
   if(rank == 0)
@@ -126,30 +123,28 @@ int main (int argc, char* argv[])
   }
   MPI_Barrier(MPI_COMM_WORLD);
 
-  sprintf(struct_parm.confile_write, "%s_wrap.con", struct_parm.cls);
-  sprintf(filename, "%s_wrap.mod", struct_parm.cls);
+  sprintf(struct_parm.confile_write, "%s_root_wrap.con", struct_parm.cls);
+  sprintf(filename, "%s_root_wrap.mod", struct_parm.cls);
   sprintf(filename_data, "tmp/wrap.dat");
-  sprintf(filename_prev, "");
 
   if(struct_parm.is_continuous == 1 && is_file_exist(struct_parm.confile_write) == 1 && is_file_exist(filename) == 1)
   {
     if(rank == 0)
-      random_negative_samples(filename_data, filename_prev, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
+      random_negative_samples(filename_data, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
     MPI_Barrier(MPI_COMM_WORLD);
 
     printf("%s exists\n", filename);
     strcpy(struct_parm.confile_read, struct_parm.confile_write);
     strcpy(modelfile, filename);
-    strcpy(filename_prev, filename_data);
   }
   else
   {
     struct_parm.is_continuous = 0;
-    printf("Train model %s\n", filename);
+    printf("Train root model %s\n", filename);
 
     /* contruct training data */
     if(rank == 0)
-      random_negative_samples(filename_data, filename_prev, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
+      random_negative_samples(filename_data, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
     MPI_Barrier(MPI_COMM_WORLD);
 
     /* read the training examples */
@@ -168,11 +163,10 @@ int main (int argc, char* argv[])
       exit(1);
       
     strcpy(modelfile, filename);
-    strcpy(filename_prev, filename_data);
     if(rank == 0)
     {
       write_struct_model(modelfile, &structmodel, &struct_parm);
-      printf("Train model with wrapped positives done\n");
+      printf("Train root model with wrapped positives done\n");
     }
     strcpy(struct_parm.confile_read, struct_parm.confile_write);
     MPI_Barrier(MPI_COMM_WORLD);
@@ -183,34 +177,34 @@ int main (int argc, char* argv[])
 
 
   /***************************************************/
-  /* training with latent positives */
+  /* training roots with latent positives */
   /***************************************************/
   struct_parm.is_wrap = 0;
+  struct_parm.deep = 0;
   for(iter = 0; iter < struct_parm.latent_positive; iter++)
   {
-    sprintf(struct_parm.confile_write, "%s_latent_%d.con", struct_parm.cls, iter);
-    sprintf(filename, "%s_latent_%d.mod", struct_parm.cls, iter);
+    sprintf(struct_parm.confile_write, "%s_root_latent_%d.con", struct_parm.cls, iter);
+    sprintf(filename, "%s_root_latent_%d.mod", struct_parm.cls, iter);
     sprintf(filename_data, "tmp/latent_%d.dat", iter);
 
     if(struct_parm.is_continuous == 1 && is_file_exist(struct_parm.confile_write) == 1 && is_file_exist(filename) == 1)
     {
       if(rank == 0)
-        random_negative_samples(filename_data, filename_prev, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
+        random_negative_samples(filename_data, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
       MPI_Barrier(MPI_COMM_WORLD);
 
       printf("%s exists\n", filename);
       strcpy(struct_parm.confile_read, struct_parm.confile_write);
       strcpy(modelfile, filename);
-      strcpy(filename_prev, filename_data);
     }
     else
     {
       struct_parm.is_continuous = 0;
-      printf("Train model %s\n", filename);
+      printf("Train root model %s\n", filename);
 
       /* contruct training data */
       if(rank == 0)
-        random_negative_samples(filename_data, filename_prev, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
+        random_negative_samples(filename_data, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
       MPI_Barrier(MPI_COMM_WORLD);
 
       /* read the training examples */
@@ -229,7 +223,66 @@ int main (int argc, char* argv[])
         exit(1);
       
       strcpy(modelfile, filename);
-      strcpy(filename_prev, filename_data);
+      if(rank == 0)
+      {
+        write_struct_model(modelfile, &structmodel, &struct_parm);
+        printf("Train root model with latent positives iter %d/%d done\n", iter, struct_parm.latent_positive);
+      }
+      strcpy(struct_parm.confile_read, struct_parm.confile_write);
+      MPI_Barrier(MPI_COMM_WORLD);
+
+      free_struct_model(structmodel);
+      free_struct_sample(sample);
+    }
+  }
+
+  /***************************************************/
+  /* training full model with latent positives */
+  /***************************************************/
+  struct_parm.is_wrap = 0;
+  struct_parm.deep = 1;
+  for(iter = 0; iter < struct_parm.latent_positive; iter++)
+  {
+    sprintf(struct_parm.confile_write, "%s_latent_%d.con", struct_parm.cls, iter);
+    sprintf(filename, "%s_latent_%d.mod", struct_parm.cls, iter);
+    sprintf(filename_data, "tmp/latent_%d.dat", iter);
+
+    if(struct_parm.is_continuous == 1 && is_file_exist(struct_parm.confile_write) == 1 && is_file_exist(filename) == 1)
+    {
+      if(rank == 0)
+        random_negative_samples(filename_data, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
+      MPI_Barrier(MPI_COMM_WORLD);
+
+      printf("%s exists\n", filename);
+      strcpy(struct_parm.confile_read, struct_parm.confile_write);
+      strcpy(modelfile, filename);
+    }
+    else
+    {
+      struct_parm.is_continuous = 0;
+      printf("Train model %s\n", filename);
+
+      /* contruct training data */
+      if(rank == 0)
+        random_negative_samples(filename_data, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
+      MPI_Barrier(MPI_COMM_WORLD);
+
+      /* read the training examples */
+      sample = read_struct_examples(filename_data, &struct_parm, &structmodel);
+      printf("Read training samples from %s done\n", filename_data);
+
+      if(alg_type == 1)
+        svm_learn_struct(sample, &struct_parm, &learn_parm, &kernel_parm, &structmodel);
+      else if(alg_type == 2)
+        svm_learn_struct_joint(sample, &struct_parm, &learn_parm, &kernel_parm, &structmodel, PRIMAL_ALG);
+      else if(alg_type == 3)
+        svm_learn_struct_joint(sample, &struct_parm, &learn_parm, &kernel_parm, &structmodel, DUAL_ALG);
+      else if(alg_type == 4)
+        svm_learn_struct_joint(sample, &struct_parm, &learn_parm, &kernel_parm, &structmodel, DUAL_CACHE_ALG);
+      else
+        exit(1);
+      
+      strcpy(modelfile, filename);
       if(rank == 0)
       {
         write_struct_model(modelfile, &structmodel, &struct_parm);
@@ -243,10 +296,11 @@ int main (int argc, char* argv[])
     }
   }
 
-  /***************************************************/
-  /* data mining hard examples */
-  /***************************************************/
+  /******************************************************/
+  /* training full model with data mining hard examples */
+  /******************************************************/
   struct_parm.is_wrap = 0;
+  struct_parm.deep = 1;
   for(iter = 0; iter < struct_parm.hard_negative; iter++)
   {
     /* file name for constraints and model */
@@ -257,13 +311,12 @@ int main (int argc, char* argv[])
     if(struct_parm.is_continuous == 1 && is_file_exist(struct_parm.confile_write) == 1 && is_file_exist(filename) == 1)
     {
       if(rank == 0)
-        random_negative_samples(filename_data, filename_prev, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
+        random_negative_samples(filename_data, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
       MPI_Barrier(MPI_COMM_WORLD);
 
       printf("%s exists\n", filename);
       strcpy(struct_parm.confile_read, struct_parm.confile_write);
       strcpy(modelfile, filename);
-      strcpy(filename_prev, filename_data);
     }
     else
     {
@@ -272,7 +325,7 @@ int main (int argc, char* argv[])
 
       /* latent positive and data mining hard negative */
       if(rank == 0)
-        random_negative_samples("tmp/temp.dat", filename_prev, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
+        random_negative_samples("tmp/temp.dat", trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
       MPI_Barrier(MPI_COMM_WORLD);
       data_mining_hard_examples(filename_data, "tmp/temp.dat", trainfile_negative, modelfile, sample_negative, cad_num, cads);
       
@@ -292,7 +345,6 @@ int main (int argc, char* argv[])
         exit(1);
       
       strcpy(modelfile, filename);
-      strcpy(filename_prev, filename_data);
       if(rank == 0)
       {
         write_struct_model(modelfile, &structmodel, &struct_parm);
@@ -382,19 +434,19 @@ int is_confile_same(char* confile_read, char* confile_write)
 
 /* randomly sample negative samples */
 /* only run in one process */
-void random_negative_samples(char *filename, char *filename_prev, char *trainfile_wrap, char *trainfile_unwrap, char *trainfile_negative, char *modelfile, int is_wrap, float *overlaps, int cad_num, CAD **cads)
+void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfile_unwrap, char *trainfile_negative, char *modelfile, int is_wrap, float *overlaps, int cad_num, CAD **cads)
 {
   char line[BUFFLE_SIZE];
-  int i, index, num_pos, num_neg, num_neg_used;
+  int i, index, num_pos, num_pos_used, num_neg, num_neg_used;
   int object_label;
   int *flag;
   float overlap, threshold = 0.7;
   FILE *fp, *fp_prev, *fp_wrap, *fp_unwrap, *fp_negative;
   STRUCTMODEL sm;
   STRUCT_LEARN_PARM sparm;
-  LABEL y;
+  LABEL* y;
   EXAMPLE example;
-  CUMATRIX matrix;
+  CUMATRIX* matrix;
 
   /* number of positive samples */
   fp_wrap = fopen(trainfile_wrap, "r");
@@ -425,13 +477,50 @@ void random_negative_samples(char *filename, char *filename_prev, char *trainfil
   /* construct new training data and write to file */
   printf("Writing data to %s\n", filename);
   fp = fopen(filename, "w");
+
+  /* determine the number of positives to be used */
+  if(is_wrap)
+    num_pos_used = num_pos;
+  else
+  {
+    /* read model */
+    sm = read_struct_model(modelfile, &sparm);
+    sm.cad_num = cad_num;
+    sm.cads = cads;
+    num_pos_used = 0;
+    y = (LABEL*)my_malloc(sizeof(LABEL)*num_pos);
+    memset(y, 0, sizeof(LABEL)*num_pos);
+    matrix = (CUMATRIX*)my_malloc(sizeof(CUMATRIX)*num_pos);
+    memset(matrix, 0, sizeof(CUMATRIX)*num_pos);
+    flag = (int*)my_malloc(sizeof(int)*num_pos);
+    memset(flag, 0, sizeof(int)*num_pos);
+
+    for(i = 0; i < num_pos; i++)
+    {
+      example = read_struct_example_one(fp_unwrap, &(matrix[i]), &sparm, &sm);
+      y[i] = find_most_positive_constraint(example.x, example.y, &sm, &sparm);
+      overlap = box_overlap(y[i].bbox, example.y.bbox);
+      printf("Latent positive example %d/%d: overlap %.2f, previous max overlap %.2f\n", i+1, num_pos, overlap, overlaps[i]);
+      if(overlap > threshold)
+      {
+        num_pos_used++;
+        flag[i] = 1;
+      }
+      if(overlap > overlaps[i])
+        overlaps[i] = overlap;
+
+      free_pattern(example.x);
+      free_label(example.y);
+    }
+  }  
+
   num_neg_used = TRAIN_NEG_NUM > num_neg/2 ? num_neg/2 : TRAIN_NEG_NUM;
-  fprintf(fp, "%d\n", num_pos+num_neg_used);
+  fprintf(fp, "%d\n", num_pos_used + num_neg_used);
 
   /* write positive samples */
   if(is_wrap)  /* use wrapped positives */
   {
-    printf("Use wrapped positives\n");
+    printf("Use %d wrapped positives\n", num_pos);
     for(i = 0; i < num_pos; i++)
     {
       fgets(line, BUFFLE_SIZE, fp_wrap);
@@ -450,50 +539,18 @@ void random_negative_samples(char *filename, char *filename_prev, char *trainfil
   }
   else  /* use latent positives */
   {
-    printf("Use latent positives and positives from %s\n", filename_prev);
-
-    /* number of previous samples */
-    fp_prev = fopen(filename_prev, "r");
-    if(fp_prev == NULL)
-    {
-      printf("Cannot open file %s to read\n", filename_prev);
-      exit(1);
-    }
-    fscanf(fp_prev, "%d\n", &i);
-
-    /* read model */
-    sm = read_struct_model(modelfile, &sparm);
-    sm.cad_num = cad_num;
-    sm.cads = cads;
+    printf("Use %d latent positives\n", num_pos_used);
     for(i = 0; i < num_pos; i++)
     {
-      example = read_struct_example_one(fp_unwrap, &matrix, &sparm, &sm);
-      y = find_most_positive_constraint(example.x, example.y, &sm, &sparm);
-      overlap = box_overlap(y.bbox, example.y.bbox);
-      printf("Latent positive example %d/%d: overlap %.2f, threshold %.2f\n", i+1, num_pos, overlap, overlaps[i]);
-      if(overlap > overlaps[i])
-      {
-        overlaps[i] = overlap;
-        write_latent_positive(fp, y, matrix, &sm, &sparm);
-        fgets(line, BUFFLE_SIZE, fp_prev);
-      }
-      else
-      {
-        fgets(line, BUFFLE_SIZE, fp_prev);
-        sscanf(line, "%d", &object_label);
-        if(object_label == 1)
-          fputs(line, fp);
-        else
-        {
-          printf("Error in read wrapped positive example %d\n", i);
-          exit(1);
-        }
-      }
-      free_pattern(example.x);
-      free_label(example.y);
-      free_cumatrix(&matrix);
+      if(flag[i] == 1)
+        write_latent_positive(fp, y[i], matrix[i], &sm, &sparm);
+
+      free_label(y[i]);
+      free_cumatrix(&(matrix[i]));
     }
-    fclose(fp_prev);
+    free(y);
+    free(matrix);
+    free(flag);
     fclose(fp_wrap);
     fclose(fp_unwrap);
   }
