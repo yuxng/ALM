@@ -22,8 +22,8 @@ cd(root_path);
 
 is_flip = 0;
 % small number for debugging
-maxnum = 12;
-data_dir = 'data_debug';
+maxnum = inf;
+data_dir = 'data';
 
 % load cad model, currently only one cad model for all the categories
 cad_num = 1;
@@ -83,17 +83,17 @@ end
 write_data(filename, pos, neg);
 
 
-% sample negative training images for VOC pascal
-fprintf('Randomize negative PASCAL samples\n');
-maxnum = 24;
-neg = rand_negative(cls, maxnum);
-fprintf('%d negative samples\n', numel(neg));
-
-% write training samples to file
-fprintf('Writing negative samples\n');
-filename = sprintf('%s/%s_neg.dat', data_dir, cls_data);
-pos = [];
-write_data(filename, pos, neg);
+% % sample negative training images for VOC pascal
+% fprintf('Randomize negative PASCAL samples\n');
+% maxnum = 24;
+% neg = rand_negative(cls, maxnum);
+% fprintf('%d negative samples\n', numel(neg));
+% 
+% % write training samples to file
+% fprintf('Writing negative samples\n');
+% filename = sprintf('%s/%s_neg.dat', data_dir, cls_data);
+% pos = [];
+% write_data(filename, pos, neg);
 
 
 % read positive training images
