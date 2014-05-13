@@ -17,7 +17,6 @@ parts2d_front(N).distance = 0;
 for i = 1:N
     % determine the frontal view of the part
     view_index = parts(i).view_index;
-    a = (360/view_num) * (view_index - 1);
     e = mean(cad.elevation);    
     if cad.roots(i) == 1
         d = cad.distance_front_root;        
@@ -27,13 +26,45 @@ for i = 1:N
         parent = floor((i-1)/(subpart_num+1))*(subpart_num+1) + 1;
         x3d = cad.parts(parent).x3d;
     end
-    x2d = project_part_points(x3d, a, e, d, viewport);
     
-    % build the part shape
-    x1 = min(x2d(:,1));
-    x2 = max(x2d(:,1));
-    y1 = min(x2d(:,2));
-    y2 = max(x2d(:,2));
+    % render the 3D object from different azimuth and take the mean shape
+    count = 0;
+    w = [];
+    h = [];
+    c = zeros(1,2);
+    for a = 0:15:345
+        index = find_interval(a, view_num);
+        if index ~= view_index
+            continue;
+        end
+        x2d = project_part_points(x3d, a, e, d, viewport);
+
+        x1 = min(x2d(:,1));
+        x2 = max(x2d(:,1));
+        y1 = min(x2d(:,2));
+        y2 = max(x2d(:,2));        
+        
+        count = count + 1;
+        w(count) = x2 - x1;
+        h(count) = y2 - y1;
+        c = c + [(x1+x2)/2 (y1+y2)/2];
+    end
+        
+    aspects = h./w;
+    aspect = mean(aspects);
+
+    areas = h.*w;
+    area = 0.8*mean(areas);
+
+    % pick dimensions
+    width = sqrt(area/aspect);
+    height = width*aspect;
+    center = c ./ count;    
+    
+    x1 = center(1) - width/2;
+    x2 = center(1) + width/2;
+    y1 = center(2) - height/2;
+    y2 = center(2) + height/2;
     
     if cad.roots(i) == 1
         part = [x1 y1; x1 y2; x2 y2; x2 y1; x1 y1];
