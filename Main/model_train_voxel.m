@@ -22,7 +22,7 @@ cd(root_path);
 
 is_flip = 0;
 % small number for debugging
-maxnum = 12;
+maxnum = 48;
 data_dir = 'data_debug';
 
 % load cad model, currently only one cad model for all the categories
@@ -85,7 +85,7 @@ write_data(filename, pos, neg);
 
 % sample negative training images for VOC pascal
 fprintf('Randomize negative PASCAL samples\n');
-maxnum = 24;
+maxnum = 96;
 neg = rand_negative(cls, maxnum);
 fprintf('%d negative samples\n', numel(neg));
  
