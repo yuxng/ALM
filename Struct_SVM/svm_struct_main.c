@@ -105,7 +105,10 @@ int main (int argc, char* argv[])
   /* training with wrapped positives */
   /***************************************************/
   struct_parm.is_wrap = 1;
-  struct_parm.deep = 1;
+  if(struct_parm.full_model == 1)
+    struct_parm.deep = 1;
+  else
+    struct_parm.deep = 0;
 
   /* intialize the overlaps */
   if(rank == 0)
@@ -179,7 +182,6 @@ int main (int argc, char* argv[])
   /* training full model with latent positives */
   /***************************************************/
   struct_parm.is_wrap = 0;
-  struct_parm.deep = 1;
   for(iter = 0; iter < struct_parm.latent_positive; iter++)
   {
     sprintf(struct_parm.confile_write, "%s_latent_%d.con", struct_parm.cls, iter);
@@ -239,7 +241,6 @@ int main (int argc, char* argv[])
   /* training with data mining hard examples */
   /******************************************************/
   struct_parm.is_wrap = 0;
-  struct_parm.deep = 1;
   for(iter = 0; iter < struct_parm.hard_negative; iter++)
   {
     /* file name for constraints and model */
