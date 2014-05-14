@@ -2,8 +2,8 @@ function display_result
 
 cls = 'car';
 cls_data = 'val';
-dat_file = sprintf('data/%s.tst', cls);
-pre_file = sprintf('data/%s.pre', cls);
+dat_file = sprintf('data_debug/%s.tst', cls);
+pre_file = sprintf('data_debug/%s.pre', cls);
 
 % load cad model
 cad_file = sprintf('../Geometry/Voxel/%s.mat', cls);
