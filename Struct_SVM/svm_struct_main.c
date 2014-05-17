@@ -132,10 +132,6 @@ int main (int argc, char* argv[])
 
   if(struct_parm.is_continuous == 1 && is_file_exist(struct_parm.confile_write) == 1 && is_file_exist(filename) == 1)
   {
-    if(rank == 0)
-      random_negative_samples(filename_data, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
-    MPI_Barrier(MPI_COMM_WORLD);
-
     printf("%s exists\n", filename);
     strcpy(struct_parm.confile_read, struct_parm.confile_write);
     strcpy(modelfile, filename);
@@ -190,10 +186,6 @@ int main (int argc, char* argv[])
 
     if(struct_parm.is_continuous == 1 && is_file_exist(struct_parm.confile_write) == 1 && is_file_exist(filename) == 1)
     {
-      if(rank == 0)
-        random_negative_samples(filename_data, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
-      MPI_Barrier(MPI_COMM_WORLD);
-
       printf("%s exists\n", filename);
       strcpy(struct_parm.confile_read, struct_parm.confile_write);
       strcpy(modelfile, filename);
@@ -250,10 +242,6 @@ int main (int argc, char* argv[])
 
     if(struct_parm.is_continuous == 1 && is_file_exist(struct_parm.confile_write) == 1 && is_file_exist(filename) == 1)
     {
-      if(rank == 0)
-        random_negative_samples(filename_data, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
-      MPI_Barrier(MPI_COMM_WORLD);
-
       printf("%s exists\n", filename);
       strcpy(struct_parm.confile_read, struct_parm.confile_write);
       strcpy(modelfile, filename);
@@ -472,7 +460,6 @@ void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfi
         printf("Error in read wrapped positive example %d\n", i);
         exit(1);
       }
-      overlaps[i] = threshold;
     }
     fclose(fp_wrap);
     fclose(fp_unwrap);
@@ -650,6 +637,7 @@ void data_mining_hard_examples(char *filename, char *trainfile, char *testfile, 
         {
           count++;
           fputs(line, fp);
+          fprintf("Use negative example %d: energy %.2f\n", i, energy_index[j].energy);
           break;
         }
       }

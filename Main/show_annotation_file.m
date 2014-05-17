@@ -1,7 +1,7 @@
 % show image with annotation
 function show_annotation_file(cls)
 
-path_file = sprintf('data/%s.tst', cls);
+path_file = sprintf('data/%s_unwrap_flip.dat', cls);
 
 % load CAD model
 object = load(sprintf('../Geometry/Voxel/%s.mat', cls));
@@ -35,6 +35,7 @@ for i = 1:N
                 center = [part_label(k,1), part_label(k,2)];
                 if isempty(part2d.(cad.pnames{k})) == 0
                     plot(center(1), center(2), 'ro');
+                    text(center(1), center(2), num2str(k), 'BackgroundColor', 'r');
                     part = part2d.(cad.pnames{k}) + repmat(center, 5, 1);
                     patch('Faces', [1 2 3 4 5], 'Vertices', part, 'EdgeColor', 'r', 'FaceColor', 'r', 'FaceAlpha', 0.1);
                 end
