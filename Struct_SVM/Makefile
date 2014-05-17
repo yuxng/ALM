@@ -11,7 +11,7 @@ MPI_LIBS := /usr/local/lib
 include ./findcudalib.mk
 
 # Location of the CUDA Toolkit
-CUDA_PATH ?= "/usr/local/cuda-5.5"
+CUDA_PATH ?= "/usr/local/cuda"
 
 # internal flags
 NVCCFLAGS   := -m${OS_SIZE}
