@@ -637,7 +637,7 @@ void data_mining_hard_examples(char *filename, char *trainfile, char *testfile, 
         {
           count++;
           fputs(line, fp);
-          fprintf("Use negative example %d: energy %.2f\n", i, energy_index[j].energy);
+          printf("Use negative example %d: energy %.2f\n", i, energy_index[j].energy);
           break;
         }
       }
