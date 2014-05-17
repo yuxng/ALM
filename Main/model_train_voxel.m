@@ -20,10 +20,10 @@ cd('..');
 addpath(pwd);
 cd(root_path);
 
-is_flip = 0;
+is_flip = 1;
 % small number for debugging
-maxnum = 48;
-data_dir = 'data_debug';
+maxnum = inf;
+data_dir = 'data';
 
 % load cad model, currently only one cad model for all the categories
 cad_num = 1;
@@ -83,17 +83,17 @@ end
 write_data(filename, pos, neg);
 
 
-% sample negative training images for VOC pascal
-fprintf('Randomize negative PASCAL samples\n');
-maxnum = 96;
-neg = rand_negative(cls, maxnum);
-fprintf('%d negative samples\n', numel(neg));
- 
-% write training samples to file
-fprintf('Writing negative samples\n');
-filename = sprintf('%s/%s_neg.dat', data_dir, cls_data);
-pos = [];
-write_data(filename, pos, neg);
+% % sample negative training images for VOC pascal
+% fprintf('Randomize negative PASCAL samples\n');
+% maxnum = 96;
+% neg = rand_negative(cls, maxnum);
+% fprintf('%d negative samples\n', numel(neg));
+%  
+% % write training samples to file
+% fprintf('Writing negative samples\n');
+% filename = sprintf('%s/%s_neg.dat', data_dir, cls_data);
+% pos = [];
+% write_data(filename, pos, neg);
 
 
 % read positive training images
@@ -320,10 +320,26 @@ for i = 1:N
     part_num = numel(cad.pnames);
     pos_flip(i).part_label = zeros(part_num, 2);
     for j = 1:part_num
-        if pos(i).part_label(j,1) ~= 0 || pos(i).part_label(j,2) ~= 0
+        if cad.roots(j) == 1 && (pos(i).part_label(j,1) ~= 0 || pos(i).part_label(j,2) ~= 0)
+            % root location
             index = find_interval(azimuth, cad.view_num);
-            pos_flip(i).part_label(index,1) = width - pos(i).part_label(j,1) + 1;
-            pos_flip(i).part_label(index,2) = pos(i).part_label(j,2);
+            root_index = find(cad.roots == 1);
+            ind = root_index(index);            
+            pos_flip(i).part_label(ind,1) = width - pos(i).part_label(j,1) + 1;
+            pos_flip(i).part_label(ind,2) = pos(i).part_label(j,2);
+            % part location
+            ind_root = ind;
+            xnum = cad.subpart_size(1);
+            ynum = cad.subpart_size(2);
+            for yindex = 1:ynum
+                for xindex = 1:xnum
+                    ind = (yindex - 1)*xnum + xindex;
+                    ind_old = (yindex - 1)*xnum + xnum - xindex + 1;
+                    pos_flip(i).part_label(ind_root+ind,1) = width - pos(i).part_label(j+ind_old,1) + 1;
+                    pos_flip(i).part_label(ind_root+ind,2) = pos(i).part_label(j+ind_old,2);
+                end
+            end
+            break;
         end
     end
     
