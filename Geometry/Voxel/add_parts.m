@@ -18,8 +18,8 @@ cad.occ_per = 0.8;
 cad.azimuth = azimuth;
 cad.elevation = elevation;
 cad.distance = distance;
-cad.distance_front_root = find_distance_front(cad, 19);
-cad.distance_front_part = find_distance_front(cad, 13);
+cad.distance_front_root = find_distance_front(cad, 30);
+cad.distance_front_part = find_distance_front(cad, 20);
 
 % first try the whole object as a part
 view_num = cad.view_num;

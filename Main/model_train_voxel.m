@@ -20,10 +20,10 @@ cd('..');
 addpath(pwd);
 cd(root_path);
 
-is_flip = 0;
+is_flip = 1;
 % small number for debugging
-maxnum = 48;
-data_dir = 'data_debug';
+maxnum = inf;
+data_dir = 'data';
 
 % load cad model, currently only one cad model for all the categories
 cad_num = 1;
@@ -51,11 +51,7 @@ neg = [];
 
 % write training samples to file
 fprintf('Writing wrapped positives\n');
-if is_flip
-    filename = sprintf('%s/%s_wrap_flip.dat', data_dir, cls_data);
-else
-    filename = sprintf('%s/%s_wrap.dat', data_dir, cls_data);
-end
+filename = sprintf('%s/%s_wrap.dat', data_dir, cls_data);
 write_data(filename, pos, neg);
 
 
@@ -75,25 +71,21 @@ neg = [];
 
 % write training samples to file
 fprintf('Writing unwrapped positives\n');
-if is_flip
-    filename = sprintf('%s/%s_unwrap_flip.dat', data_dir, cls_data);    
-else
-    filename = sprintf('%s/%s_unwrap.dat', data_dir, cls_data);
-end
+filename = sprintf('%s/%s_unwrap.dat', data_dir, cls_data);
 write_data(filename, pos, neg);
 
 
 % sample negative training images for VOC pascal
-fprintf('Randomize negative PASCAL samples\n');
-maxnum = 96;
-neg = rand_negative(cls, maxnum);
-fprintf('%d negative samples\n', numel(neg));
- 
-% write training samples to file
-fprintf('Writing negative samples\n');
-filename = sprintf('%s/%s_neg.dat', data_dir, cls_data);
-pos = [];
-write_data(filename, pos, neg);
+% fprintf('Randomize negative PASCAL samples\n');
+% maxnum = inf;
+% neg = rand_negative(cls, maxnum);
+% fprintf('%d negative samples\n', numel(neg));
+%  
+% % write training samples to file
+% fprintf('Writing negative samples\n');
+% filename = sprintf('%s/%s_neg.dat', data_dir, cls_data);
+% pos = [];
+% write_data(filename, pos, neg);
 
 
 % read positive training images
@@ -140,8 +132,8 @@ for i = 1:N
         % filtering objects
         if strcmp(cls, object.class) == 0 || object.viewpoint.distance == 0 || ...
                 (isfield(object, 'difficult') == 1 && object.difficult == 1) || ...
-                (isempty(subtype) == 0 && strcmp(object.subtype, subtype) == 0) || ...  
-                is_occld_trunc(object) == 1
+                (isempty(subtype) == 0 && strcmp(object.subtype, subtype) == 0)  
+%                 is_occld_trunc(object) == 1
 %                 is_trunc(object) == 1 || ...
 %                 object.viewpoint.distance > cads{1}.distance(end) || ...
 %                 object.viewpoint.distance < cads{1}.distance(1)           
@@ -208,20 +200,21 @@ for i = 1:N
         if is_wrap
             bbox = generate_bbox(cad, part2d, part_label);
         else
-            bbox = [object.bbox(1) object.bbox(2) object.bbox(3)-object.bbox(1) object.bbox(4)-object.bbox(2)];
+            bbox = [x1 y1 x2-x1 y2-y1];
         end
         
         % wrap positive
-        if is_wrap == 0 || is_occld_trunc(object) == 1
+        if is_wrap == 0
             im = I;
             sx = 1;
             sy = 1;
         else
-            padx = (object.bbox(3)-object.bbox(1)) / 10;
-            pady = (object.bbox(4)-object.bbox(2)) / 10;
-            sx = bbox(3) / (object.bbox(3)-object.bbox(1) + padx);
+            bbox_wrap = [x1 y1 x2 y2];
+            padx = (bbox_wrap(3)-bbox_wrap(1)) / 10;
+            pady = (bbox_wrap(4)-bbox_wrap(2)) / 10;
+            sx = bbox(3) / (bbox_wrap(3)-bbox_wrap(1) + padx);
             numcols = round(size(I,2) * sx);
-            sy = bbox(4) / (object.bbox(4)-object.bbox(2) + pady);
+            sy = bbox(4) / (bbox_wrap(4)-bbox_wrap(2) + pady);
             numrows = round(size(I,1) * sy);
             im = imresize(I, [numrows numcols], 'bilinear');
 
@@ -320,10 +313,26 @@ for i = 1:N
     part_num = numel(cad.pnames);
     pos_flip(i).part_label = zeros(part_num, 2);
     for j = 1:part_num
-        if pos(i).part_label(j,1) ~= 0 || pos(i).part_label(j,2) ~= 0
+        if cad.roots(j) == 1 && (pos(i).part_label(j,1) ~= 0 || pos(i).part_label(j,2) ~= 0)
+            % root location
             index = find_interval(azimuth, cad.view_num);
-            pos_flip(i).part_label(index,1) = width - pos(i).part_label(j,1) + 1;
-            pos_flip(i).part_label(index,2) = pos(i).part_label(j,2);
+            root_index = find(cad.roots == 1);
+            ind = root_index(index);            
+            pos_flip(i).part_label(ind,1) = width - pos(i).part_label(j,1) + 1;
+            pos_flip(i).part_label(ind,2) = pos(i).part_label(j,2);
+            % part location
+            ind_root = ind;
+            xnum = cad.subpart_size(1);
+            ynum = cad.subpart_size(2);
+            for yindex = 1:ynum
+                for xindex = 1:xnum
+                    ind = (yindex - 1)*xnum + xindex;
+                    ind_old = (yindex - 1)*xnum + xnum - xindex + 1;
+                    pos_flip(i).part_label(ind_root+ind,1) = width - pos(i).part_label(j+ind_old,1) + 1;
+                    pos_flip(i).part_label(ind_root+ind,2) = pos(i).part_label(j+ind_old,2);
+                end
+            end
+            break;
         end
     end
     

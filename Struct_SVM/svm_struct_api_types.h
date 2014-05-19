@@ -47,7 +47,7 @@
 # define BUFFLE_SIZE 10000000
 # define ITERATION_NUM 1
 # define FEATURE_NUM 9
-# define TRAIN_NEG_NUM 200
+# define TRAIN_NEG_NUM 500
 
 typedef struct constset { /* a set of linear inequality constrains of
 			     for lhs[i]*w >= rhs[i] */

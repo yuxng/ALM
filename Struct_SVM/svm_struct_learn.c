@@ -196,26 +196,26 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
       do 
       { /* go through examples that keep producing new constraints */
 
-	      if(rank == 0 && struct_verbosity >= 1)
+        if(rank == 0 && struct_verbosity >= 1)
         { 
-	        printf("Iter %i (%ld active): ",++numIt,activenum); 
-	        fflush(stdout);
-	      }
+          printf("Iter %i (%ld active): ",++numIt,activenum); 
+          fflush(stdout);
+        }
 
         if(rank == 0)	
-	        old_numConst = cset.m;
-	      ceps = 0;
-	      fullround = (activenum == n);
+          old_numConst = cset.m;
+        ceps = 0;
+        fullround = (activenum == n);
 
         /*** example loop ***/
-	      for(i = 0; i < n; i++)
+        for(i = 0; i < n; i++)
         {
           if(rank != 0 && i % procs_num != rank)
             continue;
 
-	        rt1 = get_runtime();
+          rt1 = get_runtime();
 	    
-	        if(opti[i] != opti_round) /* if the example is not shrunk away, then see if it is necessary to add a new constraint */
+          if(opti[i] != opti_round) /* if the example is not shrunk away, then see if it is necessary to add a new constraint */
           {
             if(rank == 0 && i % procs_num != rank)  /* receive data from the other process */
             {
@@ -225,16 +225,16 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
             }
             else
             {
-	            rt2 = get_runtime();
-	            argmax_count++;
-	            if(sparm->loss_type == SLACK_RESCALING) 
-	              ybar=find_most_violated_constraint_slackrescaling(ex[i].x, ex[i].y, sm, sparm);
+              rt2 = get_runtime();
+              argmax_count++;
+              if(sparm->loss_type == SLACK_RESCALING) 
+                ybar=find_most_violated_constraint_slackrescaling(ex[i].x, ex[i].y, sm, sparm);
               else
-	              ybar=find_most_violated_constraint_marginrescaling(ex[i].x, ex[i].y, sm, sparm);
-	            rt_viol += MAX(get_runtime()-rt2,0);
+                ybar=find_most_violated_constraint_marginrescaling(ex[i].x, ex[i].y, sm, sparm);
+              rt_viol += MAX(get_runtime()-rt2,0);
 	  
-	            /**** get psi(y)-psi(ybar) ****/
-	            rt2 = get_runtime();
+              /**** get psi(y)-psi(ybar) ****/
+              rt2 = get_runtime();
 
               if(sparm->is_wrap)
                 fy = psi(ex[i].x, ex[i].y, 0, sm, sparm);
@@ -266,10 +266,10 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
               prediction = y_score - ybar_score;
               printf("score %.2f, ", prediction); fflush(stdout);
 
-	            rt_psi += MAX(get_runtime()-rt2, 0);
+              rt_psi += MAX(get_runtime()-rt2, 0);
 
-	            lossval = loss(ex[i].y, ybar, sparm);
-   	          free_label(ybar);
+              lossval = loss(ex[i].y, ybar, sparm);
+              free_label(ybar);
 
               printf("loss %.2f, ", lossval); fflush(stdout);
 
@@ -280,18 +280,18 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
               printf("slack %.2f\n", cur_loss); fflush(stdout);
 	    
       	      /**** scale feature vector and margin by loss ****/
-	            if(sparm->slack_norm == 2)
-	              lossval = sqrt(lossval);
-	            if(sparm->loss_type == SLACK_RESCALING)
-	              factor = lossval;
-	            else               /* do not rescale vector for */
-	              factor = 1.0;      /* margin rescaling loss type */
+              if(sparm->slack_norm == 2)
+                lossval = sqrt(lossval);
+              if(sparm->loss_type == SLACK_RESCALING)
+                factor = lossval;
+              else               /* do not rescale vector for */
+                factor = 1.0;      /* margin rescaling loss type */
 
-	            for(f = fy; f; f = f->next)
-	              f->factor *= factor;
-	            for(f = fybar; f; f = f->next)
-	              f->factor *= -factor;
-	            margin = lossval;
+              for(f = fy; f; f = f->next)
+                f->factor *= factor;
+              for(f = fybar; f; f = f->next)
+                f->factor *= -factor;
+              margin = lossval;
 
               append_svector_list(fy, fybar);/* append the two vector lists */
 
@@ -313,95 +313,95 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
 
             if(rank == 0)
             {
-	            /**** create constraint for current ybar ****/
-	            doc = create_example(cset.m, 0, init_slack+i+1, 1, fy);
+              /**** create constraint for current ybar ****/
+              doc = create_example(cset.m, 0, init_slack+i+1, 1, fy);
 
       	      /**** compute slack for this example ****/
-	            slack = 0;
-	            for(j = 0; j < cset.m; j++)
+              slack = 0;
+              for(j = 0; j < cset.m; j++)
               {
-	              if(cset.lhs[j]->slackid == init_slack+i+1)
+                if(cset.lhs[j]->slackid == init_slack+i+1)
                 {
-		              if(sparm->slack_norm == 2) /* works only for linear kernel */
-		                slack = MAX(slack, cset.rhs[j] - (classify_example(svmModel, cset.lhs[j]) - sm->w[sizePsi+i]/(sqrt(2*svmCnorm))));
-		              else
-		                slack=MAX(slack, cset.rhs[j] - classify_example(svmModel, cset.lhs[j]));
-	              }
+                  if(sparm->slack_norm == 2) /* works only for linear kernel */
+                    slack = MAX(slack, cset.rhs[j] - (classify_example(svmModel, cset.lhs[j]) - sm->w[sizePsi+i]/(sqrt(2*svmCnorm))));
+                  else
+                    slack=MAX(slack, cset.rhs[j] - classify_example(svmModel, cset.lhs[j]));
+                }
               }
 	    
-	            /**** if `error' add constraint and recompute ****/
-	            dist = classify_example(svmModel, doc);
-	            ceps = MAX(ceps, margin - dist - slack);
-	            if(slack > (margin-dist+0.0001))
+              /**** if `error' add constraint and recompute ****/
+              dist = classify_example(svmModel, doc);
+              ceps = MAX(ceps, margin - dist - slack);
+              if(slack > (margin-dist+0.0001))
               {
-	              printf("\nWARNING: Slack of most violated constraint is smaller than slack of working\n");
-	              printf("         set! There is probably a bug in 'find_most_violated_constraint_*'.\n");
-	              printf("Ex %d: slack=%f, newslack=%f\n", i+1, slack, margin-dist);
+                printf("\nWARNING: Slack of most violated constraint is smaller than slack of working\n");
+                printf("         set! There is probably a bug in 'find_most_violated_constraint_*'.\n");
+                printf("Ex %d: slack=%f, newslack=%f\n", i+1, slack, margin-dist);
       	      }
-	            if((dist + slack) < (margin - epsilon))
+              if((dist + slack) < (margin - epsilon))
               { 
-	              if(struct_verbosity >= 2)
-		            {
+                if(struct_verbosity >= 2)
+                {
                   printf("(%i,eps=%.2f) ", i, margin-dist-slack);
                   fflush(stdout);
                 }
-	              if(struct_verbosity == 1)
-          		  {
+                if(struct_verbosity == 1)
+                {
                   printf(".");
                   fflush(stdout);
                 }
 	      
-	              /**** resize constraint matrix and add new constraint ****/
-	              cset.m++;
-	              cset.lhs = (DOC **)realloc(cset.lhs, sizeof(DOC *)*cset.m);
+	        /**** resize constraint matrix and add new constraint ****/
+                cset.m++;
+                cset.lhs = (DOC **)realloc(cset.lhs, sizeof(DOC *)*cset.m);
       	        if(kparm->kernel_type == LINEAR)
                 {
-		              diff = add_list_ss(fy); /* store difference vector directly */
-		              if(sparm->slack_norm == 1) 
-		                cset.lhs[cset.m-1] = create_example(cset.m-1, 0, init_slack+i+1, 1, copy_svector(diff));
-            		  else if(sparm->slack_norm == 2)
+                  diff = add_list_ss(fy); /* store difference vector directly */
+                  if(sparm->slack_norm == 1) 
+                    cset.lhs[cset.m-1] = create_example(cset.m-1, 0, init_slack+i+1, 1, copy_svector(diff));
+      		  else if(sparm->slack_norm == 2)
                   {
-		                /**** add squared slack variable to feature vector ****/
-		                slackv[0].wnum = sizePsi + i;
-		                slackv[0].weight = 1/(sqrt(2*svmCnorm));
-		                slackv[1].wnum = 0; /*terminator*/
-		                slackvec = create_svector(slackv, "", 1.0);
-		                cset.lhs[cset.m-1] = create_example(cset.m-1, 0, init_slack+i+1, 1, add_ss(diff,slackvec));
-            		    free_svector(slackvec);
-		              }
-		              free_svector(diff);
-	              }  
-	              else   /* kernel is used */
+                    /**** add squared slack variable to feature vector ****/
+                    slackv[0].wnum = sizePsi + i;
+                    slackv[0].weight = 1/(sqrt(2*svmCnorm));
+                    slackv[1].wnum = 0; /*terminator*/
+                    slackvec = create_svector(slackv, "", 1.0);
+                    cset.lhs[cset.m-1] = create_example(cset.m-1, 0, init_slack+i+1, 1, add_ss(diff,slackvec));
+       		    free_svector(slackvec);
+                  }
+                  free_svector(diff);
+                }  
+                else   /* kernel is used */
                 { 
-		              if(sparm->slack_norm == 1)
-            		    cset.lhs[cset.m-1]=create_example(cset.m-1, 0, init_slack+i+1, 1, copy_svector(fy));
-            		  else if(sparm->slack_norm == 2)
-		                exit(1);
-	              }
-	              cset.rhs = (double *)realloc(cset.rhs, sizeof(double)*cset.m);
-	              cset.rhs[cset.m-1] = margin;
-	              alpha = (double *)realloc(alpha,sizeof(double)*cset.m);
-	              alpha[cset.m-1] = 0;
-	              alphahist=(long *)realloc(alphahist, sizeof(long)*cset.m);
-	              alphahist[cset.m-1] = optcount;
-	              newconstraints++;
-	              totconstraints++;
-	            }
-	            else
+                  if(sparm->slack_norm == 1)
+       		    cset.lhs[cset.m-1]=create_example(cset.m-1, 0, init_slack+i+1, 1, copy_svector(fy));
+       		  else if(sparm->slack_norm == 2)
+                    exit(1);
+                }
+                cset.rhs = (double *)realloc(cset.rhs, sizeof(double)*cset.m);
+                cset.rhs[cset.m-1] = margin;
+                alpha = (double *)realloc(alpha,sizeof(double)*cset.m);
+                alpha[cset.m-1] = 0;
+                alphahist=(long *)realloc(alphahist, sizeof(long)*cset.m);
+                alphahist[cset.m-1] = optcount;
+                newconstraints++;
+                totconstraints++;
+              }
+              else
               {
-	              printf("+");
+                printf("+");
                 fflush(stdout); 
-	              if(opti[i] != opti_round)
+                if(opti[i] != opti_round)
                 {
-		              activenum--;
-		              opti[i] = opti_round; 
-	              }
-	            }
+                  activenum--;
+                  opti[i] = opti_round; 
+                }
+              }
 
-	            free_example(doc, 0);
+              free_example(doc, 0);
             }
-	          free_svector(fy); /* this also free's fybar */
-	        }
+            free_svector(fy); /* this also free's fybar */
+          }
           else if(rank != 0)
           {
             MPI_Recv(svmModel->lin_weights, svmModel->totwords+1, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD, &Stat);
@@ -411,43 +411,43 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
             copy_to_float_weights(sm);
           }
 
-	        /**** get new QP solution ****/
-	        if(rank == 0 && (i % procs_num == procs_num-1 || i == n-1))
+          /**** get new QP solution ****/
+          if(rank == 0 && (i % procs_num == procs_num-1 || i == n-1))
           {
             if( (newconstraints >= sparm->newconstretrain) || ((newconstraints > 0) && (i == n-1)) || (new_precision && (i == n-1)) )
             {
-	            if(struct_verbosity >= 1)
+              if(struct_verbosity >= 1)
               {
-	              printf("*%ld new constraints ", newconstraints);
+                printf("*%ld new constraints ", newconstraints);
                 fflush(stdout);
-	            }
-	            rt2 = get_runtime();
+              }
+              rt2 = get_runtime();
       	      /* Always get a new kernel cache. It is not possible to use the same cache for two different training runs */
-	            if(kparm->kernel_type != LINEAR)
-	              kcache=kernel_cache_init(MAX(cset.m,1), lparm->kernel_cache_size);
-	            /* Run the QP solver on cset. */
-	            svm_learn_optimization_linear(cset.lhs, cset.rhs, cset.m, sizePsi+n, init_slack+n, lparm, kparm, kcache, svmModel, alpha, 0);
-	            if(kcache)
-	              kernel_cache_cleanup(kcache);
-	            /* Always add weight vector, in case part of the kernel is linear. If not, ignore the weight vector since its content is bogus. */
               if(kparm->kernel_type != LINEAR)
-	              add_weight_vector_to_linear_model(svmModel);
-	            sm->svm_model = svmModel;
-	            sm->w = svmModel->lin_weights; /* short cut to weight vector */
+                kcache=kernel_cache_init(MAX(cset.m,1), lparm->kernel_cache_size);
+              /* Run the QP solver on cset. */
+              svm_learn_optimization_linear(cset.lhs, cset.rhs, cset.m, sizePsi+n, init_slack+n, lparm, kparm, kcache, svmModel, alpha, 0);
+              if(kcache)
+                kernel_cache_cleanup(kcache);
+              /* Always add weight vector, in case part of the kernel is linear. If not, ignore the weight vector since its content is bogus. */
+              if(kparm->kernel_type != LINEAR)
+                add_weight_vector_to_linear_model(svmModel);
+              sm->svm_model = svmModel;
+              sm->w = svmModel->lin_weights; /* short cut to weight vector */
               copy_to_float_weights(sm);
 
-	            optcount++;
-	            /* keep track of when each constraint was last active. constraints marked with -1 are not updated */
-	            for(j = 0; j < cset.m; j++) 
+              optcount++;
+              /* keep track of when each constraint was last active. constraints marked with -1 are not updated */
+              for(j = 0; j < cset.m; j++) 
               {
-	              if((alphahist[j] >- 1) && (alpha[j] != 0))  
-		              alphahist[j] = optcount;
+                if((alphahist[j] >- 1) && (alpha[j] != 0))  
+                  alphahist[j] = optcount;
               }
-	            rt_opt += MAX(get_runtime()-rt2,0);
+              rt_opt += MAX(get_runtime()-rt2,0);
 	    
-	            new_precision = 0;
-	            newconstraints = 0;
-	          }
+              new_precision = 0;
+              newconstraints = 0;
+            }
             for(j = i; j % procs_num; j--)
             {
               MPI_Send(svmModel->lin_weights, svmModel->totwords+1, MPI_DOUBLE, j % procs_num, 1, MPI_COMM_WORLD);
@@ -455,9 +455,9 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
             }
           }
 
-	        rt_total += MAX(get_runtime()-rt1, 0);
+          rt_total += MAX(get_runtime()-rt1, 0);
 
-	      } /* end of example loop */
+        } /* end of example loop */
 
         /* broadcast */
         MPI_Bcast(svmModel->lin_weights, svmModel->totwords+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -471,31 +471,31 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
           flag_terminate = ((cset.m - old_numConst) > tolerance) || (!fullround);
         MPI_Bcast(&flag_terminate, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-	      rt1=get_runtime();
+        rt1=get_runtime();
 	
-	      if(rank == 0 && struct_verbosity >= 1)
-	        printf("(NumConst=%d, SV=%ld, CEps=%.4f, QPEps=%.4f)\n", cset.m, svmModel->sv_num-1, ceps, svmModel->maxdiff);
+        if(rank == 0 && struct_verbosity >= 1)
+          printf("(NumConst=%d, SV=%ld, CEps=%.4f, QPEps=%.4f)\n", cset.m, svmModel->sv_num-1, ceps, svmModel->maxdiff);
 	
       	/* Check if some of the linear constraints have not been active in a while. Those constraints are then removed to avoid bloating the working set beyond necessity. */
         if(rank == 0)
         {
-	        if(struct_verbosity >= 2)
+          if(struct_verbosity >= 2)
           {
-	          printf("Reducing working set...");
+            printf("Reducing working set...");
             fflush(stdout);
           }
-	        remove_inactive_constraints(&cset, alpha, optcount, alphahist, MAX(50, optcount-lastoptcount));
-	        lastoptcount = optcount;
-	        if(struct_verbosity >= 2)
-	          printf("done. (NumConst=%d)\n", cset.m);
+          remove_inactive_constraints(&cset, alpha, optcount, alphahist, MAX(50, optcount-lastoptcount));
+          lastoptcount = optcount;
+          if(struct_verbosity >= 2)
+            printf("done. (NumConst=%d)\n", cset.m);
         }
 	
-	      rt_total += MAX(get_runtime()-rt1, 0);
+        rt_total += MAX(get_runtime()-rt1, 0);
         MPI_Barrier(MPI_COMM_WORLD);
 	
       } while(activenum > 0 && flag_terminate);   /* repeat until all examples produced no constraint at least once */
 
-    } while(flag_terminate);
+    } while(0);
 
   } while(epsilon > sparm->epsilon);  
 

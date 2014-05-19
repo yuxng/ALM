@@ -5,6 +5,11 @@ if nargin < 3
     azimuth_interval = [0 (360/(vnum*2)):(360/vnum):360-(360/(vnum*2))];
 end
 
+root_path = pwd;
+cd('..');
+addpath(pwd);
+cd(root_path);
+
 % viewpoint annotation path
 opt = globals;
 path_ann_view = sprintf(opt.path_ann_pascal, cls);

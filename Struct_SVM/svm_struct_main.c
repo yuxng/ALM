@@ -52,7 +52,7 @@ int is_confile_same(char* confile_read, char* confile_write);
 int main (int argc, char* argv[])
 {
   FILE *fp;
-  int i, cad_num, iter, flag, num;
+  int i, cad_num, iter, num;
   char filename[256], filename_data[256];
   CAD **cads, *cad;
   SAMPLE sample, sample_negative;  /* training sample */
@@ -105,7 +105,10 @@ int main (int argc, char* argv[])
   /* training with wrapped positives */
   /***************************************************/
   struct_parm.is_wrap = 1;
-  struct_parm.deep = 1;
+  if(struct_parm.full_model == 1)
+    struct_parm.deep = 1;
+  else
+    struct_parm.deep = 0;
 
   /* intialize the overlaps */
   if(rank == 0)
@@ -123,16 +126,12 @@ int main (int argc, char* argv[])
   }
   MPI_Barrier(MPI_COMM_WORLD);
 
-  sprintf(struct_parm.confile_write, "%s_wrap.con", struct_parm.cls);
+  sprintf(struct_parm.confile_write, "%s.con", struct_parm.cls);
   sprintf(filename, "%s_wrap.mod", struct_parm.cls);
   sprintf(filename_data, "tmp/wrap.dat");
 
   if(struct_parm.is_continuous == 1 && is_file_exist(struct_parm.confile_write) == 1 && is_file_exist(filename) == 1)
   {
-    if(rank == 0)
-      random_negative_samples(filename_data, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
-    MPI_Barrier(MPI_COMM_WORLD);
-
     printf("%s exists\n", filename);
     strcpy(struct_parm.confile_read, struct_parm.confile_write);
     strcpy(modelfile, filename);
@@ -179,19 +178,14 @@ int main (int argc, char* argv[])
   /* training full model with latent positives */
   /***************************************************/
   struct_parm.is_wrap = 0;
-  struct_parm.deep = 1;
   for(iter = 0; iter < struct_parm.latent_positive; iter++)
   {
-    sprintf(struct_parm.confile_write, "%s_latent_%d.con", struct_parm.cls, iter);
+    sprintf(struct_parm.confile_write, "%s.con", struct_parm.cls);
     sprintf(filename, "%s_latent_%d.mod", struct_parm.cls, iter);
     sprintf(filename_data, "tmp/latent_%d.dat", iter);
 
     if(struct_parm.is_continuous == 1 && is_file_exist(struct_parm.confile_write) == 1 && is_file_exist(filename) == 1)
     {
-      if(rank == 0)
-        random_negative_samples(filename_data, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
-      MPI_Barrier(MPI_COMM_WORLD);
-
       printf("%s exists\n", filename);
       strcpy(struct_parm.confile_read, struct_parm.confile_write);
       strcpy(modelfile, filename);
@@ -239,20 +233,15 @@ int main (int argc, char* argv[])
   /* training with data mining hard examples */
   /******************************************************/
   struct_parm.is_wrap = 0;
-  struct_parm.deep = 1;
   for(iter = 0; iter < struct_parm.hard_negative; iter++)
   {
     /* file name for constraints and model */
-    sprintf(struct_parm.confile_write, "%s_hard_%d.con", struct_parm.cls, iter);
+    sprintf(struct_parm.confile_write, "%s.con", struct_parm.cls);
     sprintf(filename, "%s_hard_%d.mod", struct_parm.cls, iter);
     sprintf(filename_data, "tmp/hard_%d.dat", iter);
 
     if(struct_parm.is_continuous == 1 && is_file_exist(struct_parm.confile_write) == 1 && is_file_exist(filename) == 1)
     {
-      if(rank == 0)
-        random_negative_samples(filename_data, trainfile_wrap, trainfile_unwrap, trainfile_negative, modelfile, struct_parm.is_wrap, overlaps, cad_num, cads);
-      MPI_Barrier(MPI_COMM_WORLD);
-
       printf("%s exists\n", filename);
       strcpy(struct_parm.confile_read, struct_parm.confile_write);
       strcpy(modelfile, filename);
@@ -289,15 +278,12 @@ int main (int argc, char* argv[])
         write_struct_model(modelfile, &structmodel, &struct_parm);
         printf("Train model hard iter %d/%d done\n", iter, struct_parm.hard_negative);
       }
-      flag = is_confile_same(struct_parm.confile_read, struct_parm.confile_write);
       strcpy(struct_parm.confile_read, struct_parm.confile_write);
       MPI_Barrier(MPI_COMM_WORLD);
         
       /* free the structmodel and samples */
       free_struct_model(structmodel);
       free_struct_sample(sample);
-      if(flag == 1)
-        break;
     }
   }
 
@@ -471,7 +457,6 @@ void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfi
         printf("Error in read wrapped positive example %d\n", i);
         exit(1);
       }
-      overlaps[i] = threshold;
     }
     fclose(fp_wrap);
     fclose(fp_unwrap);
@@ -649,6 +634,7 @@ void data_mining_hard_examples(char *filename, char *trainfile, char *testfile, 
         {
           count++;
           fputs(line, fp);
+          printf("Use negative example %d: energy %.2f\n", i, energy_index[j].energy);
           break;
         }
       }
