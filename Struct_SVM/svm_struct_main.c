@@ -374,21 +374,26 @@ void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfi
   CUMATRIX* matrix;
 
   /* number of positive samples */
-  fp_wrap = fopen(trainfile_wrap, "r");
-  if(fp_wrap == NULL)
+  if(is_wrap)
   {
-    printf("Cannot open file %s to read\n", trainfile_wrap);
-    exit(1);
+    fp_wrap = fopen(trainfile_wrap, "r");
+    if(fp_wrap == NULL)
+    {
+      printf("Cannot open file %s to read\n", trainfile_wrap);
+      exit(1);
+    }
+    fscanf(fp_wrap, "%d\n", &num_pos);
   }
-  fscanf(fp_wrap, "%d\n", &num_pos);
-
-  fp_unwrap = fopen(trainfile_unwrap, "r");
-  if(fp_unwrap == NULL)
+  else
   {
-    printf("Cannot open file %s to read\n", trainfile_unwrap);
-    exit(1);
+    fp_unwrap = fopen(trainfile_unwrap, "r");
+    if(fp_unwrap == NULL)
+    {
+      printf("Cannot open file %s to read\n", trainfile_unwrap);
+      exit(1);
+    }
+    fscanf(fp_unwrap, "%d\n", &num_pos);
   }
-  fscanf(fp_unwrap, "%d\n", &num_pos);
 
   /* number of negative samples */
   fp_negative = fopen(trainfile_negative, "r");
@@ -459,7 +464,6 @@ void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfi
       }
     }
     fclose(fp_wrap);
-    fclose(fp_unwrap);
   }
   else  /* use latent positives */
   {
@@ -475,7 +479,6 @@ void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfi
     free(y);
     free(matrix);
     free(flag);
-    fclose(fp_wrap);
     fclose(fp_unwrap);
   }
 
