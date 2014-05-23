@@ -60,8 +60,8 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
   EXAMPLE     *ex = sample.examples;
   double      rt_total = 0, rt_opt = 0, rt_init = 0, rt_psi = 0, rt_viol = 0;
   double      rt1, rt2;
-  double y_score, ybar_score, azimuth, elevation, distance, prediction, cur_loss;
-  double *diff_margin = NULL, *diff_n = NULL;
+  double y_score, ybar_score, azimuth, elevation, distance, prediction, cur_loss, energy;
+  double *diff_margin_energy = NULL, *diff_n = NULL;
 
   /* MPI process */
   int rank;
@@ -86,8 +86,8 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
   /* for MPI usage */
   diff_n = create_nvector(sm->sizePsi);
   clear_nvector(diff_n, sm->sizePsi);
-	diff_margin = create_nvector(sm->sizePsi+1);
-  clear_nvector(diff_margin, sm->sizePsi+1);
+  diff_margin_energy = create_nvector(sm->sizePsi+2);
+  clear_nvector(diff_margin_energy, sm->sizePsi+2);
 
   /* normalize regularization parameter C by the number of training examples */
   svmCnorm = sparm->C / n;
@@ -127,7 +127,7 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
       alphahist = (long*)realloc(alphahist, sizeof(long)*cset.m);
       for(i = 0; i < cset.m; i++)
       {
-        alphahist[i] = -1; /* -1 makes sure these constraints are never removed */
+        alphahist[i] = optcount; /* -1 makes sure these constraints are never removed */
         if(cset.lhs[i]->slackid > init_slack)
           init_slack = cset.lhs[i]->slackid;
       }
@@ -219,9 +219,10 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
           {
             if(rank == 0 && i % procs_num != rank)  /* receive data from the other process */
             {
-              MPI_Recv(diff_margin, sm->sizePsi+2, MPI_DOUBLE, i % procs_num, 1, MPI_COMM_WORLD, &Stat);
-              fy = create_svector_n(diff_margin, sm->sizePsi, "", 1.0);
-              margin = diff_margin[sm->sizePsi+1];
+              MPI_Recv(diff_margin_energy, sm->sizePsi+3, MPI_DOUBLE, i % procs_num, 1, MPI_COMM_WORLD, &Stat);
+              fy = create_svector_n(diff_margin_energy, sm->sizePsi, "", 1.0);
+              margin = diff_margin_energy[sm->sizePsi+1];
+              energy = diff_margin_energy[sm->sizePsi+2];
             }
             else
             {
@@ -231,6 +232,7 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
                 ybar=find_most_violated_constraint_slackrescaling(ex[i].x, ex[i].y, sm, sparm);
               else
                 ybar=find_most_violated_constraint_marginrescaling(ex[i].x, ex[i].y, sm, sparm);
+              energy = ybar.energy;
               rt_viol += MAX(get_runtime()-rt2,0);
 	  
               /**** get psi(y)-psi(ybar) ****/
@@ -299,10 +301,11 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
               {
                 clear_nvector(diff_n, sm->sizePsi);
                 add_list_n_ns(diff_n, fy, 1.0); /* add fy-fybar to sum */
-                memcpy(diff_margin, diff_n, sizeof(double)*(sm->sizePsi+1));
-                diff_margin[sm->sizePsi+1] = margin;
+                memcpy(diff_margin_energy, diff_n, sizeof(double)*(sm->sizePsi+1));
+                diff_margin_energy[sm->sizePsi+1] = margin;
+                diff_margin_energy[sm->sizePsi+2] = energy;
 
-                MPI_Send(diff_margin, sm->sizePsi+2, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD);
+                MPI_Send(diff_margin_energy, sm->sizePsi+3, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD);
                 MPI_Recv(svmModel->lin_weights, svmModel->totwords+1, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD, &Stat);
                 MPI_Recv(&(svmModel->b), 1, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD, &Stat);
                 sm->svm_model = svmModel;
@@ -332,13 +335,15 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
               /**** if `error' add constraint and recompute ****/
               dist = classify_example(svmModel, doc);
               ceps = MAX(ceps, margin - dist - slack);
+              /*
               if(slack > (margin-dist+0.0001))
               {
                 printf("\nWARNING: Slack of most violated constraint is smaller than slack of working\n");
                 printf("         set! There is probably a bug in 'find_most_violated_constraint_*'.\n");
                 printf("Ex %d: slack=%f, newslack=%f\n", i+1, slack, margin-dist);
       	      }
-              if((dist + slack) < (margin - epsilon))
+              */
+              if(energy > -sparm->loss_value && (dist + slack) < (margin - epsilon))
               { 
                 if(struct_verbosity >= 2)
                 {
@@ -484,7 +489,7 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
             printf("Reducing working set...");
             fflush(stdout);
           }
-          remove_inactive_constraints(&cset, alpha, optcount, alphahist, MAX(50, optcount-lastoptcount));
+          remove_inactive_constraints(&cset, alpha, optcount, alphahist, MAX(10, optcount-lastoptcount));
           lastoptcount = optcount;
           if(struct_verbosity >= 2)
             printf("done. (NumConst=%d)\n", cset.m);
@@ -552,7 +557,7 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
     free_model(svmModel, 0);
   free(opti);
   free(diff_n);
-  free(diff_margin);
+  free(diff_margin_energy);
 
   if(rank == 0)
   {
