@@ -865,6 +865,7 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, ST
   if(y.object_label == 1)
   {
     ybar.object_label = -1;
+    ybar.energy = 0;
     return ybar;
   }  
 
