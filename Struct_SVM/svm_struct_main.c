@@ -403,6 +403,7 @@ void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfi
     exit(1);
   }
   fscanf(fp_negative, "%d\n", &num_neg);
+  printf("Number of negative samples: %d, %d samples used\n", num_neg, TRAIN_NEG_NUM);
 
   /* construct new training data and write to file */
   printf("Writing data to %s\n", filename);
