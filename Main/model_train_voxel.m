@@ -149,24 +149,24 @@ for i = 1:N
         part_label = zeros(numel(cad.pnames), 2);
         
         % determine the bounding box
-        if is_occld_trunc(object)
-            index = find_interval(object.viewpoint.azimuth, cad.view_num);
-            root_index = find(cad.roots == 1);
-            ind = root_index(index);
-            center = part2d.centers(ind,:) - [cad.viewport/2 cad.viewport/2] + [object.viewpoint.px object.viewpoint.py];
-            part = part2d.(cad.pnames{ind});
-            part = part + repmat(center, size(part,1), 1);
-            x1 = min(part(:,1));
-            x2 = max(part(:,1));
-            y1 = min(part(:,2));
-            y2 = max(part(:,2));
-        else
+%         if is_occld_trunc(object)
+%             index = find_interval(object.viewpoint.azimuth, cad.view_num);
+%             root_index = find(cad.roots == 1);
+%             ind = root_index(index);
+%             center = part2d.centers(ind,:) - [cad.viewport/2 cad.viewport/2] + [object.viewpoint.px object.viewpoint.py];
+%             part = part2d.(cad.pnames{ind});
+%             part = part + repmat(center, size(part,1), 1);
+%             x1 = min(part(:,1));
+%             x2 = max(part(:,1));
+%             y1 = min(part(:,2));
+%             y2 = max(part(:,2));
+%         else
             bbox = object.bbox;
             x1 = bbox(1);
             x2 = bbox(3);
             y1 = bbox(2);
             y2 = bbox(4);
-        end
+%         end
         
         for k = 1:numel(cad.pnames)
             if isempty(part2d.(cad.pnames{k})) == 1
@@ -200,7 +200,8 @@ for i = 1:N
         if is_wrap
             bbox = generate_bbox(cad, part2d, part_label);
         else
-            bbox = [x1 y1 x2-x1 y2-y1];
+            % bbox = [x1 y1 x2-x1 y2-y1];
+            bbox = [object.bbox(1) object.bbox(2) object.bbox(3)-object.bbox(1) object.bbox(4)-object.bbox(2)];
         end
         
         % wrap positive
