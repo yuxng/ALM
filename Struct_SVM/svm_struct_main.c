@@ -126,7 +126,7 @@ int main (int argc, char* argv[])
   }
   MPI_Barrier(MPI_COMM_WORLD);
 
-  sprintf(struct_parm.confile_write, "%s.con", struct_parm.cls);
+  sprintf(struct_parm.confile_write, "%s_wrap.con", struct_parm.cls);
   sprintf(filename, "%s_wrap.mod", struct_parm.cls);
   sprintf(filename_data, "tmp/wrap.dat");
 
@@ -180,7 +180,7 @@ int main (int argc, char* argv[])
   struct_parm.is_wrap = 0;
   for(iter = 0; iter < struct_parm.latent_positive; iter++)
   {
-    sprintf(struct_parm.confile_write, "%s.con", struct_parm.cls);
+    sprintf(struct_parm.confile_write, "%s_latent.con", struct_parm.cls);
     sprintf(filename, "%s_latent_%d.mod", struct_parm.cls, iter);
     sprintf(filename_data, "tmp/latent_%d.dat", iter);
 
@@ -236,7 +236,7 @@ int main (int argc, char* argv[])
   for(iter = 0; iter < struct_parm.hard_negative; iter++)
   {
     /* file name for constraints and model */
-    sprintf(struct_parm.confile_write, "%s.con", struct_parm.cls);
+    sprintf(struct_parm.confile_write, "%s_hard.con", struct_parm.cls);
     sprintf(filename, "%s_hard_%d.mod", struct_parm.cls, iter);
     sprintf(filename_data, "tmp/hard_%d.dat", iter);
 
@@ -365,7 +365,7 @@ void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfi
   int i, index, num_pos, num_pos_used, num_neg, num_neg_used;
   int object_label;
   int *flag;
-  float overlap, threshold = 0.6;
+  float overlap, threshold = 0.7;
   FILE *fp, *fp_prev, *fp_wrap, *fp_unwrap, *fp_negative;
   STRUCTMODEL sm;
   STRUCT_LEARN_PARM sparm;
