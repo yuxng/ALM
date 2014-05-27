@@ -365,7 +365,7 @@ void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfi
   int i, index, num_pos, num_pos_used, num_neg, num_neg_used;
   int object_label;
   int *flag;
-  float overlap, threshold = 0.7;
+  float overlap, threshold = 0.6;
   FILE *fp, *fp_prev, *fp_wrap, *fp_unwrap, *fp_negative;
   STRUCTMODEL sm;
   STRUCT_LEARN_PARM sparm;
