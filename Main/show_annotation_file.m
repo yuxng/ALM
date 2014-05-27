@@ -1,7 +1,8 @@
 % show image with annotation
 function show_annotation_file(cls)
 
-path_file = sprintf('data/%s_wrap.dat', cls);
+% path_file = sprintf('data/%s_unwrap.dat', cls);
+path_file = '../Struct_SVM/tmp/latent_0.dat';
 
 % load CAD model
 object = load(sprintf('../Geometry/Voxel/%s.mat', cls));
