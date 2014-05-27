@@ -126,7 +126,7 @@ int main (int argc, char* argv[])
   }
   MPI_Barrier(MPI_COMM_WORLD);
 
-  sprintf(struct_parm.confile_write, "%s.con", struct_parm.cls);
+  sprintf(struct_parm.confile_write, "%s_wrap.con", struct_parm.cls);
   sprintf(filename, "%s_wrap.mod", struct_parm.cls);
   sprintf(filename_data, "tmp/wrap.dat");
 
@@ -180,7 +180,7 @@ int main (int argc, char* argv[])
   struct_parm.is_wrap = 0;
   for(iter = 0; iter < struct_parm.latent_positive; iter++)
   {
-    sprintf(struct_parm.confile_write, "%s.con", struct_parm.cls);
+    sprintf(struct_parm.confile_write, "%s_latent.con", struct_parm.cls);
     sprintf(filename, "%s_latent_%d.mod", struct_parm.cls, iter);
     sprintf(filename_data, "tmp/latent_%d.dat", iter);
 
@@ -236,7 +236,7 @@ int main (int argc, char* argv[])
   for(iter = 0; iter < struct_parm.hard_negative; iter++)
   {
     /* file name for constraints and model */
-    sprintf(struct_parm.confile_write, "%s.con", struct_parm.cls);
+    sprintf(struct_parm.confile_write, "%s_hard.con", struct_parm.cls);
     sprintf(filename, "%s_hard_%d.mod", struct_parm.cls, iter);
     sprintf(filename_data, "tmp/hard_%d.dat", iter);
 
@@ -403,6 +403,7 @@ void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfi
     exit(1);
   }
   fscanf(fp_negative, "%d\n", &num_neg);
+  printf("Number of negative samples: %d, %d samples used\n", num_neg, TRAIN_NEG_NUM);
 
   /* construct new training data and write to file */
   printf("Writing data to %s\n", filename);
