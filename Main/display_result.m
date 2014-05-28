@@ -2,8 +2,8 @@ function display_result
 
 cls = 'car';
 cls_data = 'car';
-dat_file = sprintf('data_debug/%s_unwrap.dat', cls_data);
-pre_file = sprintf('data_debug/%s_unwrap.pre', cls_data);
+dat_file = sprintf('data/%s.tst', cls_data);
+pre_file = sprintf('data/%s.pre', cls_data);
 
 % load cad model
 cad_file = sprintf('../Geometry/Voxel/%s.mat', cls);
@@ -46,7 +46,7 @@ for i = 1:N
     hold on;
 
     til = sprintf('%d: ', i);
-    for k = 1:min(1, num)
+    for k = 1:min(2, num)
         % get predicted bounding box
         bbox_pr = examples{k}.bbox;
         if example.object_label == 1
