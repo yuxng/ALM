@@ -77,7 +77,7 @@ write_data(filename, pos, neg);
 
 % sample negative training images for VOC pascal
 % fprintf('Randomize negative PASCAL samples\n');
-% maxnum = inf;
+% maxnum = 48;
 % neg = rand_negative(cls, maxnum);
 % fprintf('%d negative samples\n', numel(neg));
 %  

@@ -48,7 +48,6 @@ for i = 1:M
 end
 fprintf('Read detections done\n');
 
-
 energy = [];
 correct = [];
 correct_view = [];
@@ -102,7 +101,7 @@ for i = 1:M
         bbox_pr(1) = max(1, bbox_pr(1));
         bbox_pr(2) = max(1, bbox_pr(2));
         bbox_pr(3) = min(bbox_pr(3), rec.imgsize(1));
-        bbox_pr(4) = min(bbox_pr(4), rec.imgsize(2));         
+        bbox_pr(4) = min(bbox_pr(4), rec.imgsize(2));
         
         cad_label = example(j).cad_label;
         view_label = example(j).view_label;
