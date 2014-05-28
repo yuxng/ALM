@@ -1474,14 +1474,14 @@ void svm_learn_optimization_linear(DOC **docs, double *rhs, long int totdoc, lon
   double G, C, d, alpha_old;
   double *QD, *alpha_sum;
 
-	// PG: projected gradient, for shrinking and stopping
-	double PG;
-	double PGmax_old = PLUS_INFINITY;
-	double PGmin_old = MINUS_INFINITY;
-	double PGmax_new, PGmin_new;
+  // PG: projected gradient, for shrinking and stopping
+  double PG;
+  double PGmax_old = PLUS_INFINITY;
+  double PGmin_old = MINUS_INFINITY;
+  double PGmax_new, PGmin_new;
 
-	double v = 0;
-	int nSV = 0;
+  double v = 0;
+  int nSV = 0;
 
   if(is_init)
   {
@@ -1505,7 +1505,7 @@ void svm_learn_optimization_linear(DOC **docs, double *rhs, long int totdoc, lon
     model->xa_precision = -1;
     model->maxdiff = 0;
 
-	  /* empty constraint set */
+    /* empty constraint set */
     if(alpha == NULL)
     {
       model->lin_weights = create_nvector(totwords);
@@ -1525,135 +1525,135 @@ void svm_learn_optimization_linear(DOC **docs, double *rhs, long int totdoc, lon
   alpha_sum = (double*)my_malloc(sizeof(double)*n);
   memset(alpha_sum, 0, sizeof(double)*n);
   index = (int*)my_malloc(sizeof(int)*totdoc);
-	for(i = 0; i < totdoc; i++)
-	{
-		QD[i] = sprod_ss(docs[i]->fvec, docs[i]->fvec);
+  for(i = 0; i < totdoc; i++)
+  {
+    QD[i] = sprod_ss(docs[i]->fvec, docs[i]->fvec);
     slackid = docs[i]->slackid - 1;
     alpha_sum[slackid] += alpha[i];
-		index[i] = i;
-	}
+    index[i] = i;
+  }
 
   iter = 0;
-	while (iter < max_iter)
-	{
-		PGmax_new = MINUS_INFINITY;
-		PGmin_new = PLUS_INFINITY;
+  while (iter < max_iter)
+  {
+    PGmax_new = MINUS_INFINITY;
+    PGmin_new = PLUS_INFINITY;
 
-		for (i = 0; i < active_size; i++)
-		{
-			j = i + rand() % (active_size - i);
+    for (i = 0; i < active_size; i++)
+    {
+      j = i + rand() % (active_size - i);
       /* swap index[i] and index[j] */
       temp = index[i];
       index[i] = index[j];
       index[j] = temp;
-		}
+    }
 
-		for (s = 0; s < active_size; s++)
-		{
-			i = index[s];
+    for (s = 0; s < active_size; s++)
+    {
+      i = index[s];
       slackid = docs[i]->slackid - 1;
 
       /* gradient */
       G = classify_example(model, docs[i]) - rhs[i];
 
-			C = learn_parm->svm_c;
+      C = learn_parm->svm_c;
 
       /* projected gradient */
-			PG = 0;
-			if (alpha[i] == 0)
-			{
-				if (G > PGmax_old)
-				{
-					active_size--;
+      PG = 0;
+      if (alpha[i] == 0)
+      {
+        if (G > PGmax_old)
+	{
+	  active_size--;
           temp = index[s];
           index[s] = index[active_size];
           index[active_size] = temp;
-					s--;
-					continue;
-				}
-				else if (G < 0)
-					PG = G;
-			}
-			else if (alpha_sum[slackid] == C)
-			{
-				if (G < PGmin_old)
-				{
-					active_size--;
+	  s--;
+	  continue;
+	}
+	else if (G < 0)
+	  PG = G;
+      }
+      else if (alpha_sum[slackid] == C)
+      {
+        if (G < PGmin_old)
+	{
+	  active_size--;
           temp = index[s];
           index[s] = index[active_size];
           index[active_size] = temp;
-					s--;
-					continue;
-				}
-				else if (G > 0)
-					PG = G;
-			}
-			else
-				PG = G;
+	  s--;
+	  continue;
+	}
+	else if (G > 0)
+	  PG = G;
+      }
+      else
+	PG = G;
 
-			PGmax_new = MAX(PGmax_new, PG);
-			PGmin_new = MIN(PGmin_new, PG);
+      PGmax_new = MAX(PGmax_new, PG);
+      PGmin_new = MIN(PGmin_new, PG);
 
       /* update */
-			if(fabs(PG) > 1.0e-12)
-			{
-				alpha_old = alpha[i];
-				alpha[i] = MIN(MAX(alpha[i] - G/QD[i], 0.0), C - alpha_sum[slackid] + alpha[i]);
+      if(fabs(PG) > 1.0e-12)
+      {
+        alpha_old = alpha[i];
+	alpha[i] = MIN(MAX(alpha[i] - G/QD[i], 0.0), C - alpha_sum[slackid] + alpha[i]);
 
-				d = alpha[i] - alpha_old;
+	d = alpha[i] - alpha_old;
         alpha_sum[slackid] += d;
         add_vector_ns(model->lin_weights, docs[i]->fvec, d);
-			}
-		}
+      }
+    }
 
-		iter++;
-		if(iter % 10 == 0)
+    iter++;
+    if(iter % 10 == 0)
     {
-			printf(".");
+      printf(".");
       fflush(stdout);
     }
 
-		if(PGmax_new - PGmin_new <= learn_parm->epsilon_crit)
-		{
-			if(active_size == totdoc)
-				break;
-			else
-			{
-				active_size = totdoc;
-				printf("*");
+    if(PGmax_new - PGmin_new <= learn_parm->epsilon_crit)
+    {
+      if(active_size == totdoc)
+	break;
+      else
+      {
+	active_size = totdoc;
+	printf("*");
         fflush(stdout);
-				PGmax_old = PLUS_INFINITY;
-				PGmin_old = MINUS_INFINITY;
-				continue;
-			}
-		}
-		PGmax_old = PGmax_new;
-		PGmin_old = PGmin_new;
-		if (PGmax_old <= 0)
-			PGmax_old = PLUS_INFINITY;
-		if (PGmin_old >= 0)
-			PGmin_old = MINUS_INFINITY;
-	}
+	PGmax_old = PLUS_INFINITY;
+	PGmin_old = MINUS_INFINITY;
+	continue;
+      }
+    }
+    PGmax_old = PGmax_new;
+    PGmin_old = PGmin_new;
+    if (PGmax_old <= 0)
+      PGmax_old = PLUS_INFINITY;
+    if (PGmin_old >= 0)
+      PGmin_old = MINUS_INFINITY;
+  }
 
-	printf("\noptimization finished, #iter = %d\n", iter);
-	if (iter >= max_iter)
-		printf("\nWARNING: reaching max number of iterations\n\n");
+  printf("\noptimization finished, #iter = %d\n", iter);
+  if (iter >= max_iter)
+  printf("\nWARNING: reaching max number of iterations\n\n");
 
-	// calculate objective value
-	for(i = 1; i < totwords; i++)
-		v += model->lin_weights[i] * model->lin_weights[i];
+  // calculate objective value
+  for(i = 1; i < totwords; i++)
+    v += model->lin_weights[i] * model->lin_weights[i];
 
-	for(i = 0; i < totdoc; i++)
-	{
-		v += alpha[i]*(-2);
-		if(alpha[i] > 0)
-			++nSV;
-	}
-	printf("Objective value = %lf\n",v/2);
-	printf("nSV = %d\n",nSV);
+  for(i = 0; i < totdoc; i++)
+  {
+    v += alpha[i]*(-2);
+    if(alpha[i] > 0)
+    ++nSV;
+  }
+  printf("Objective value = %lf\n",v/2);
+  printf("nSV = %d\n",nSV);
   model->sv_num = nSV+1;
 
-	free(QD);
+  free(QD);
   free(alpha_sum);
-	free(index);
+  free(index);
 }
