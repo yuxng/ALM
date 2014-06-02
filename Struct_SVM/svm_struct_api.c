@@ -90,6 +90,8 @@ CAD** read_cad_model(char *file, int *cad_num_return, int istest, STRUCT_LEARN_P
       /* add one weight for self-occluded part */
       cad->feature_len += len + 1;
     }
+    /* two parameters for each edge */
+    cad->feature_len += cad->part_num * (cad->part_num-1);
   }
 
   /* get padding length from CAD models */
@@ -466,9 +468,7 @@ void compute_bbox_part(LABEL *y, STRUCTMODEL *sm)
   }
 }
 
-void        init_struct_model(SAMPLE sample, STRUCTMODEL *sm, 
-			      STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm, 
-			      KERNEL_PARM *kparm)
+void init_struct_model(SAMPLE sample, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm, KERNEL_PARM *kparm)
 {
   /* Initialize structmodel sm. The weight vector w does not need to be
      initialized, but you need to provide the maximum size of the
@@ -488,6 +488,8 @@ void        init_struct_model(SAMPLE sample, STRUCTMODEL *sm,
       /* add one weight for self-occluded part */
       sizePsi += len + 1;
     }
+    /* two parameters for each edge */
+    sizePsi += cad->part_num * (cad->part_num-1);
   }
 
   sm->sizePsi = sizePsi; /* replace by appropriate number of features */
@@ -511,14 +513,54 @@ CONSTSET init_struct_constraints(SAMPLE sample, double **alpha, STRUCTMODEL *sm,
      the number of constraints. The function returns the initial
      set of constraints. */
   CONSTSET c;
+  long i, j, start;
+  WORD words[2];
+  int num, len, count;
+  CAD *cad;
 
   if(strlen(sparm->confile_read) == 0) /* normal case: start with empty set of constraints */ 
   {
+    /*
     printf("Initialize with empty constraint\n");
     c.lhs = NULL;
     c.rhs = NULL;
     c.m = 0;
     *alpha = NULL;
+    */
+
+    printf("Initialize with positive constraints\n");
+    num = 0;
+    for(i = 0; i < sm->cad_num; i++)
+    {
+      cad = sm->cads[i];
+      /* two parameters for each edge */
+      num += cad->part_num * (cad->part_num-1);
+    }
+
+    c.m = num;
+    c.lhs = my_malloc(sizeof(DOC *)*num);
+    c.rhs = my_malloc(sizeof(double)*num);
+    start = 0;
+    count = 0;
+    for(j = 0; j < sm->cad_num; j++)
+    {
+      cad = sm->cads[j];
+      for(i = 0; i < cad->part_num; i++)
+        start += cad->part_templates[i]->length + 1;
+      len = cad->part_num * (cad->part_num-1);
+      for(i = 0; i < len; i++)
+      {
+        words[0].wnum = start+1;
+        words[0].weight = -1.0;
+        words[1].wnum = 0;
+        c.lhs[count] = create_example(count, 0, count, 1, create_svector(words,"",1.0));
+        c.rhs[count] = 0.0;
+        count++;
+        start++;
+      }
+    }
+    *alpha = (double*)my_malloc(sizeof(double)*num);
+    memset(*alpha, 0, sizeof(double)*num);
   }
   else /* add constraints so that all learned weights are positive. WARNING: Currently, they are positive only up to precision epsilon set by -e. */
   {
@@ -629,7 +671,7 @@ LABEL* classify_struct_example(PATTERN x, int *label_num, int flag, STRUCTMODEL 
       }
 
       /* run BP algorithm */
-      child_to_parent(cad->objects2d[v]->tree+cad->objects2d[v]->root_index, NULL, cad->objects2d[v], cad->objects2d[v]->graph, cad->part_templates[0]->sbin, NULL, sparm);
+      child_to_parent(cad->objects2d[v]->tree+cad->objects2d[v]->root_index, NULL, cad->objects2d[v], weights, cad->objects2d[v]->graph, cad->part_templates[0]->sbin, NULL, sparm);
       compute_root_scores(cad->objects2d[v]->tree+cad->objects2d[v]->root_index, occ_energy, cad->part_templates[0]->sbin, cad->part_num, NULL, o, v, sm, sparm);
       mask = non_maxima_suppression(cad->objects2d[v]->tree[cad->objects2d[v]->root_index].dims, cad->objects2d[v]->tree[cad->objects2d[v]->root_index].messages[0]);
       get_multiple_detection(&y, &count, o, v, cad->objects2d[v]->tree+cad->objects2d[v]->root_index, mask, cad->part_templates[0]->sbin, cad->part_num, sm, sparm);
@@ -952,13 +994,13 @@ LABEL       find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, ST
       /* run BP algorithm */
       if(sparm->loss_function)
       {
-        child_to_parent(cad->objects2d[v]->tree+cad->objects2d[v]->root_index, NULL, cad->objects2d[v], cad->objects2d[v]->graph, cad->part_templates[0]->sbin, &y, sparm);
+        child_to_parent(cad->objects2d[v]->tree+cad->objects2d[v]->root_index, NULL, cad->objects2d[v], weights, cad->objects2d[v]->graph, cad->part_templates[0]->sbin, &y, sparm);
         compute_root_scores(cad->objects2d[v]->tree+cad->objects2d[v]->root_index, occ_energy, cad->part_templates[0]->sbin, cad->part_num, &y, o, v, sm, sparm);
         energy = get_maximum_label(cad->objects2d[v]->tree+cad->objects2d[v]->root_index, cad->part_templates[0]->sbin, cad->part_num, part_label, sparm);
       }
       else
       {
-        child_to_parent(cad->objects2d[v]->tree+cad->objects2d[v]->root_index, NULL, cad->objects2d[v], cad->objects2d[v]->graph, cad->part_templates[0]->sbin, NULL, sparm);
+        child_to_parent(cad->objects2d[v]->tree+cad->objects2d[v]->root_index, NULL, cad->objects2d[v], weights, cad->objects2d[v]->graph, cad->part_templates[0]->sbin, NULL, sparm);
         compute_root_scores(cad->objects2d[v]->tree+cad->objects2d[v]->root_index, occ_energy, cad->part_templates[0]->sbin, cad->part_num, NULL, o, v, sm, sparm);
         energy = get_maximum_label(cad->objects2d[v]->tree+cad->objects2d[v]->root_index, cad->part_templates[0]->sbin, cad->part_num, part_label, sparm);
       }
@@ -1125,7 +1167,7 @@ LABEL find_most_positive_constraint(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_
       }
 
       /* run BP algorithm */
-      child_to_parent(cad->objects2d[v]->tree+cad->objects2d[v]->root_index, NULL, cad->objects2d[v], cad->objects2d[v]->graph, cad->part_templates[0]->sbin, NULL, sparm);
+      child_to_parent(cad->objects2d[v]->tree+cad->objects2d[v]->root_index, NULL, cad->objects2d[v], weights, cad->objects2d[v]->graph, cad->part_templates[0]->sbin, NULL, sparm);
       compute_root_scores(cad->objects2d[v]->tree+cad->objects2d[v]->root_index, occ_energy, cad->part_templates[0]->sbin, cad->part_num, NULL, o, v, sm, sparm);
       energy = get_maximum_label(cad->objects2d[v]->tree+cad->objects2d[v]->root_index, cad->part_templates[0]->sbin, cad->part_num, part_label, sparm);
 
@@ -1457,9 +1499,11 @@ void label_from_backtrack(TREENODE *node, TREENODE *parent, int px, int py, int 
 }
 
 /* pass messages from children to parents */
-void child_to_parent(TREENODE *node, TREENODE *parent, OBJECT2D *object2d, int **graph, int sbin, LABEL *y, STRUCT_LEARN_PARM *sparm)
+void child_to_parent(TREENODE *node, TREENODE *parent, OBJECT2D *object2d, float *weights, int **graph, int sbin, LABEL *y, STRUCT_LEARN_PARM *sparm)
 {
   int i, j, xi, yi, max_x, max_y;
+  int indexi, indexj, temp;
+  float *w;
   float wx, wy;
   float *message, *v, *location;
   float val, max_val;
@@ -1471,7 +1515,7 @@ void child_to_parent(TREENODE *node, TREENODE *parent, OBJECT2D *object2d, int *
   if(sparm->deep)
   {
     for(i = 0; i < node->child_num; i++)
-      child_to_parent(node->children[i], node, object2d, graph, sbin, y, sparm);
+      child_to_parent(node->children[i], node, object2d, weights, graph, sbin, y, sparm);
   }
 
   if(parent == NULL)
@@ -1553,8 +1597,36 @@ void child_to_parent(TREENODE *node, TREENODE *parent, OBJECT2D *object2d, int *
     dc = sqrt((cx1-cx2)*(cx1-cx2) + (cy1-cy2)*(cy1-cy2));
     ac = atan2(cy2-cy1, cx2-cx1);
 
+    /* find the weights */
+    indexi = node->index;
+    indexj = parent->index;
+    /* obey the order in pairwise potential */
+    if(indexi > indexj)
+    {
+      temp = indexi;
+      indexi = indexj;
+      indexj = temp;
+    }
+    w = weights;
+    for(i = 0; i < indexi; i++)
+    {
+      for(j = i+1; j < object2d->part_num; j++)
+      {
+        w += 2;
+      }
+    }
+    for(j = indexi+1; j < indexj; j++)
+      w += 2;
+    wx = *w;
+    wy = *(w+1);
+
+    wx *= sparm->wpair;
+    wy *= sparm->wpair;
+
+    /*
     wx = -sparm->wpair;
     wy = -sparm->wpair;
+    */
 
     M.dims_num = 2;
     M.dims = node->dims;
@@ -1728,10 +1800,14 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
   /* insert code for computing the feature vector for x and y here */
   CAD *cad;
   int i, j, k, wpos, wnum, part_index;
+  int indexi, indexj;
   int *part_feature_index;
   float part_score, score;
   float cxprim, cyprim;
   float cx, cy;
+  float x1, y1, x2, y2;
+  float cx1, cy1, cx2, cy2;
+  float dis, theta;
   float *features, *homography, T[9];
   WORD *words;
   CUMATRIX rectified_image, cropped_hog, hog;
@@ -1911,6 +1987,59 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
       words[wpos].weight = 1.0;
       wpos++;
       wnum++;
+    }
+  }
+
+  /* pairwise features */
+  for(i = 0; i < cad->part_num; i++)
+  {
+    for(j = i+1; j < cad->part_num; j++)
+    {
+      /* from child to parent */
+      if(cad->objects2d[y.view_label]->graph[i][j] == 1)
+      {
+        indexi = j;
+        indexj = i;
+      }
+      else if(cad->objects2d[y.view_label]->graph[j][i] == 1)
+      {
+        indexi = i;
+        indexj = j;
+      }
+      else
+      {
+        indexi = -1;
+        indexj = -1;
+      }
+
+      if(indexi != -1 && indexj != -1)
+      {
+        /* part centers */
+        x1 = y.part_label[indexi];
+        y1 = y.part_label[cad->part_num+indexi];
+        x2 = y.part_label[indexj];
+        y2 = y.part_label[cad->part_num+indexj];
+
+        cx1 = cad->objects2d[y.view_label]->part_locations[indexi];
+        cy1 = cad->objects2d[y.view_label]->part_locations[cad->part_num+indexi];
+        cx2 = cad->objects2d[y.view_label]->part_locations[indexj];
+        cy2 = cad->objects2d[y.view_label]->part_locations[cad->part_num+indexj];
+
+        /* distance and angle between parts projected from cad model */
+        dis = sqrt((cx1-cx2)*(cx1-cx2) + (cy1-cy2)*(cy1-cy2));
+        theta = atan2(cy2-cy1, cx2-cx1);
+
+        words[wpos].wnum = wnum;
+        words[wpos].weight = sparm->wpair * pow((x1 - x2 + dis*cos(theta)) / (dis*cos(theta)), 2.0);  /* x distance difference */
+        wpos++;
+        wnum++;
+        words[wpos].wnum = wnum;
+        words[wpos].weight = sparm->wpair * pow((y1 - y2 + dis*sin(theta)) / (dis*sin(theta)), 2.0);  /* y distance difference */
+        wpos++;
+        wnum++;
+      }
+      else
+        wnum += 2;
     }
   }
 
@@ -2215,8 +2344,7 @@ void        eval_prediction(long exnum, EXAMPLE ex, LABEL ypred,
   }
 }
 
-void        write_struct_model(char *file, STRUCTMODEL *sm, 
-			       STRUCT_LEARN_PARM *sparm)
+void write_struct_model(char *file, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm)
 {
   /* Writes structural model sm to file file. */
   long i;
@@ -2286,7 +2414,7 @@ STRUCTMODEL read_struct_model(char *file, STRUCT_LEARN_PARM *sparm)
   return sm;
 }
 
-void        write_label(FILE *fp, LABEL y, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm)
+void write_label(FILE *fp, LABEL y, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm)
 {
   /* Writes label y to file handle fp. */
   int i;
