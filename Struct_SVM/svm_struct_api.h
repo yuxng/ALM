@@ -76,7 +76,7 @@ CAD** read_cad_model(char *file, int *cad_num_return, int istest, STRUCT_LEARN_P
 CUMATRIX crop_hog(CUMATRIX hog, int cx, int cy, int b0, int b1);
 CUMATRIX rectify_potential(CUMATRIX A, int width, int height, int sbin, float *T);
 void label_from_backtrack(TREENODE *node, TREENODE *parent, int px, int py, int sbin, int part_num, float *part_dst, STRUCT_LEARN_PARM *sparm);
-void child_to_parent(TREENODE *node, TREENODE *parent, OBJECT2D *object2d, int **graph, int sbin, LABEL *y, STRUCT_LEARN_PARM *sparm);
+void child_to_parent(TREENODE *node, TREENODE *parent, OBJECT2D *object2d, float *weights, int **graph, int sbin, LABEL *y, STRUCT_LEARN_PARM *sparm);
 void copy_to_float_weights(STRUCTMODEL *sm);
 void write_weights(STRUCTMODEL *sm);
 float compute_azimuth_difference(LABEL y, LABEL ybar, STRUCTMODEL *sm);
