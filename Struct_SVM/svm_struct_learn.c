@@ -127,7 +127,7 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
       alphahist = (long*)realloc(alphahist, sizeof(long)*cset.m);
       for(i = 0; i < cset.m; i++)
       {
-        alphahist[i] = optcount; /* -1 makes sure these constraints are never removed */
+        alphahist[i] = -1; /* -1 makes sure these constraints are never removed */
         if(cset.lhs[i]->slackid > init_slack)
           init_slack = cset.lhs[i]->slackid;
       }

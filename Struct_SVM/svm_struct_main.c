@@ -362,16 +362,19 @@ int is_confile_same(char* confile_read, char* confile_write)
 void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfile_unwrap, char *trainfile_negative, char *modelfile, int is_wrap, float *overlaps, int cad_num, CAD **cads)
 {
   char line[BUFFLE_SIZE];
-  int i, index, num_pos, num_pos_used, num_neg, num_neg_used;
+  int i, index, num_pos, num_pos_used, num_neg, num_neg_used, index_pos, index_neg, count_pos, count_neg;
   int object_label;
-  int *flag;
+  int *flag_pos, *flag_neg;
+  int procs_num;
   float overlap, threshold = 0.6;
-  FILE *fp, *fp_prev, *fp_wrap, *fp_unwrap, *fp_negative;
+  FILE *fp, *fp_wrap, *fp_unwrap, *fp_negative;
   STRUCTMODEL sm;
   STRUCT_LEARN_PARM sparm;
   LABEL* y;
   EXAMPLE example;
   CUMATRIX* matrix;
+
+  MPI_Comm_size(MPI_COMM_WORLD, &procs_num);
 
   /* number of positive samples */
   if(is_wrap)
@@ -411,7 +414,12 @@ void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfi
 
   /* determine the number of positives to be used */
   if(is_wrap)
+  {
     num_pos_used = num_pos;
+    flag_pos = (int*)my_malloc(sizeof(int)*num_pos);
+    for(i = 0; i < num_pos; i++)
+      flag_pos[i] = 1;
+  } 
   else
   {
     /* read model */
@@ -423,8 +431,8 @@ void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfi
     memset(y, 0, sizeof(LABEL)*num_pos);
     matrix = (CUMATRIX*)my_malloc(sizeof(CUMATRIX)*num_pos);
     memset(matrix, 0, sizeof(CUMATRIX)*num_pos);
-    flag = (int*)my_malloc(sizeof(int)*num_pos);
-    memset(flag, 0, sizeof(int)*num_pos);
+    flag_pos = (int*)my_malloc(sizeof(int)*num_pos);
+    memset(flag_pos, 0, sizeof(int)*num_pos);
 
     for(i = 0; i < num_pos; i++)
     {
@@ -435,7 +443,7 @@ void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfi
       if(overlap > threshold)
       {
         num_pos_used++;
-        flag[i] = 1;
+        flag_pos[i] = 1;
       }
       if(overlap > overlaps[i])
         overlaps[i] = overlap;
@@ -448,76 +456,115 @@ void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfi
   num_neg_used = TRAIN_NEG_NUM > num_neg/2 ? num_neg/2 : TRAIN_NEG_NUM;
   fprintf(fp, "%d\n", num_pos_used + num_neg_used);
 
-  /* write positive samples */
-  if(is_wrap)  /* use wrapped positives */
-  {
-    printf("Use %d wrapped positives\n", num_pos);
-    for(i = 0; i < num_pos; i++)
-    {
-      fgets(line, BUFFLE_SIZE, fp_wrap);
-      sscanf(line, "%d", &object_label);
-      if(object_label == 1)
-        fputs(line, fp);
-      else
-      {
-        printf("Error in read wrapped positive example %d\n", i);
-        exit(1);
-      }
-    }
-    fclose(fp_wrap);
-  }
-  else  /* use latent positives */
-  {
-    printf("Use %d latent positives\n", num_pos_used);
-    for(i = 0; i < num_pos; i++)
-    {
-      if(flag[i] == 1)
-        write_latent_positive(fp, y[i], matrix[i], &sm, &sparm);
-
-      free_label(y[i]);
-      free_cumatrix(&(matrix[i]));
-    }
-    free(y);
-    free(matrix);
-    free(flag);
-    fclose(fp_unwrap);
-  }
-
   /* randomly sample num_neg_used negative samples */
-  flag = (int*)my_malloc(sizeof(int)*num_neg);
-  memset(flag, 0, sizeof(int)*num_neg);
+  flag_neg = (int*)my_malloc(sizeof(int)*num_neg);
+  memset(flag_neg, 0, sizeof(int)*num_neg);
   i = 0;
   while(i < num_neg_used)
   {
     index = (int)rand() % num_neg;
-    if(flag[index] == 0)
+    if(flag_neg[index] == 0)
     {
-      flag[index] = 1;
+      flag_neg[index] = 1;
       i++;
     }
   }
 
-  /* write negative samples */
-  for(i = 0; i < num_neg; i++)
+  /* write training samples */
+  if(is_wrap)
+    printf("Use %d wrapped positives\n", num_pos_used);
+  else
+    printf("Use %d latent positives\n", num_pos_used);
+
+  index_pos = 0;
+  index_neg = 0;
+  while(index_pos < num_pos || index_neg < num_neg)
   {
-    fgets(line, BUFFLE_SIZE, fp_negative);
-    if(flag[i])
-      fputs(line, fp);
+    count_pos = 0;
+    while(index_pos < num_pos)
+    {
+      if(is_wrap)
+      {
+        fgets(line, BUFFLE_SIZE, fp_wrap);
+        sscanf(line, "%d", &object_label);
+        if(object_label != 1)
+        {
+          printf("Error in read wrapped positive example %d\n", index_pos);
+          exit(1);
+        }
+
+        if(flag_pos[index_pos])
+        {
+          fputs(line, fp);
+          index_pos++;
+          count_pos++;
+          if(count_pos >= procs_num)
+            break;
+        }
+        else
+          index_pos++;
+      }
+      else
+      {
+        if(flag_pos[index_pos])
+        {
+          write_latent_positive(fp, y[index_pos], matrix[index_pos], &sm, &sparm);
+          free_label(y[index_pos]);
+          free_cumatrix(&(matrix[index_pos]));
+          index_pos++;
+          count_pos++;
+          if(count_pos >= procs_num)
+            break;
+        }
+        else
+        {
+          free_label(y[index_pos]);
+          free_cumatrix(&(matrix[index_pos]));
+          index_pos++;
+        }
+      }
+    }   
+
+    count_neg = 0;
+    while(index_neg < num_neg)
+    {
+      fgets(line, BUFFLE_SIZE, fp_negative);
+      if(flag_neg[index_neg])
+      {
+        fputs(line, fp);
+        index_neg++;
+        count_neg++;
+        if(count_neg >= procs_num)
+          break;
+      }
+      else
+        index_neg++;
+    }
   }
+
+  if(is_wrap)
+    fclose(fp_wrap);
+  else
+    fclose(fp_unwrap);
   fclose(fp_negative);
   fclose(fp);
 
   /* clean up */
-  free(flag);
+  free(flag_pos);
+  free(flag_neg);
   if(!is_wrap)
+  {
+    free(y);
+    free(matrix);
     free_struct_model(sm);
+  }
 }
 
 
 /* data mining hard negative samples */
 void data_mining_hard_examples(char *filename, char *trainfile, char *testfile, char *modelfile, SAMPLE testsample, int cad_num, CAD **cads)
 {
-  int i, j, n, ntrain, ntest, num, object_label, count, count_pos, count_neg;
+  int i, j, n, ntrain, ntest, num, object_label, count, count_neg, index_neg, flag;
   char line[BUFFLE_SIZE];
   double *energy, *energies;
   LABEL *y = NULL;
@@ -611,40 +658,41 @@ void data_mining_hard_examples(char *filename, char *trainfile, char *testfile, 
     fscanf(ftest, "%d\n", &ntest);
 
     fprintf(fp, "%d\n", ntrain);
-    count_pos = 0;
+    index_neg = 0;
+    count_neg = TRAIN_NEG_NUM > ntest/2 ? ntest/2 : TRAIN_NEG_NUM;
     for(i = 0; i < ntrain; i++)
     {
       fgets(line, BUFFLE_SIZE, ftrain);
       sscanf(line, "%d", &object_label);
       if(object_label == 1)
-      {
         fputs(line, fp);
-        count_pos++;
-      }
       else
-        break;
-    }
-    fclose(ftrain);
-    count_neg = ntrain - count_pos;
-
-    /* negative samples from hard negative examples */
-    count = 0;
-    for(i = 0; i < ntest; i++)
-    {
-      fgets(line, BUFFLE_SIZE, ftest);
-      for(j = 0; j < count_neg; j++)
       {
-        if(i == energy_index[j].index)
+        while(index_neg < ntest)
         {
-          count++;
-          fputs(line, fp);
-          printf("Use negative example %d: energy %.2f\n", i, energy_index[j].energy);
-          break;
+          fgets(line, BUFFLE_SIZE, ftest);
+          flag = 0;
+          for(j = 0; j < count_neg; j++)
+          {
+            if(index_neg == energy_index[j].index)
+            {
+              fputs(line, fp);
+              printf("Use negative example %d: energy %.2f\n", index_neg, energy_index[j].energy);
+              flag = 1;
+              break;
+            }
+          }
+          if(flag)
+          {
+            index_neg++;
+            break;
+          }
+          else
+            index_neg++;
         }
       }
-      if(count >= count_neg)
-        break;
     }
+    fclose(ftrain);
     fclose(ftest);
     fclose(fp);
     free(energy_index);

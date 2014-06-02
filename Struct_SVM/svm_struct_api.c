@@ -513,14 +513,54 @@ CONSTSET init_struct_constraints(SAMPLE sample, double **alpha, STRUCTMODEL *sm,
      the number of constraints. The function returns the initial
      set of constraints. */
   CONSTSET c;
+  long i, j, start;
+  WORD words[2];
+  int num, len, count;
+  CAD *cad;
 
   if(strlen(sparm->confile_read) == 0) /* normal case: start with empty set of constraints */ 
   {
+    /*
     printf("Initialize with empty constraint\n");
     c.lhs = NULL;
     c.rhs = NULL;
     c.m = 0;
     *alpha = NULL;
+    */
+
+    printf("Initialize with positive constraints\n");
+    num = 0;
+    for(i = 0; i < sm->cad_num; i++)
+    {
+      cad = sm->cads[i];
+      /* two parameters for each edge */
+      num += cad->part_num * (cad->part_num-1);
+    }
+
+    c.m = num;
+    c.lhs = my_malloc(sizeof(DOC *)*num);
+    c.rhs = my_malloc(sizeof(double)*num);
+    start = 0;
+    count = 0;
+    for(j = 0; j < sm->cad_num; j++)
+    {
+      cad = sm->cads[j];
+      for(i = 0; i < cad->part_num; i++)
+        start += cad->part_templates[i]->length + 1;
+      len = cad->part_num * (cad->part_num-1);
+      for(i = 0; i < len; i++)
+      {
+        words[0].wnum = start+1;
+        words[0].weight = -1.0;
+        words[1].wnum = 0;
+        c.lhs[count] = create_example(count, 0, count, 1, create_svector(words,"",1.0));
+        c.rhs[count] = 0.0;
+        count++;
+        start++;
+      }
+    }
+    *alpha = (double*)my_malloc(sizeof(double)*num);
+    memset(*alpha, 0, sizeof(double)*num);
   }
   else /* add constraints so that all learned weights are positive. WARNING: Currently, they are positive only up to precision epsilon set by -e. */
   {
