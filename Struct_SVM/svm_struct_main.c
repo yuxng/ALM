@@ -738,7 +738,7 @@ void read_input_parameters(int argc, char *argv[], char *trainfile_wrap, char *t
   struct_parm->custom_argc=0;
   struct_parm->loss_function=DEFAULT_LOSS_FCT;
   struct_parm->loss_type=DEFAULT_RESCALING;
-  struct_parm->newconstretrain=100;
+  struct_parm->newconstretrain=1000;
   struct_parm->ccache_size=5;
 
   /* loss parameters */

@@ -46,7 +46,7 @@ for i = 1:N
     hold on;
 
     til = sprintf('%d: ', i);
-    for k = 1:min(1, num)
+    for k = 1:min(2, num)
         % get predicted bounding box
         bbox_pr = examples{k}.bbox;
         if example.object_label == 1
