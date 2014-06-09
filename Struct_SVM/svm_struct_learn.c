@@ -1563,33 +1563,33 @@ void svm_learn_optimization_linear(DOC **docs, double *rhs, long int totdoc, lon
       if (alpha[i] == 0)
       {
         if (G > PGmax_old)
-	{
-	  active_size--;
+	      {
+	        active_size--;
           temp = index[s];
           index[s] = index[active_size];
           index[active_size] = temp;
-	  s--;
-	  continue;
-	}
-	else if (G < 0)
-	  PG = G;
+	        s--;
+	        continue;
+	      }
+	      else if (G < 0)
+	        PG = G;
       }
       else if (alpha_sum[slackid] == C)
       {
         if (G < PGmin_old)
-	{
-	  active_size--;
+	      {
+	        active_size--;
           temp = index[s];
           index[s] = index[active_size];
           index[active_size] = temp;
-	  s--;
-	  continue;
-	}
-	else if (G > 0)
-	  PG = G;
+	        s--;
+	        continue;
+	      }
+	      else if (G > 0)
+	        PG = G;
       }
       else
-	PG = G;
+	      PG = G;
 
       PGmax_new = MAX(PGmax_new, PG);
       PGmin_new = MIN(PGmin_new, PG);
@@ -1598,9 +1598,9 @@ void svm_learn_optimization_linear(DOC **docs, double *rhs, long int totdoc, lon
       if(fabs(PG) > 1.0e-12)
       {
         alpha_old = alpha[i];
-	alpha[i] = MIN(MAX(alpha[i] - G/QD[i], 0.0), C - alpha_sum[slackid] + alpha[i]);
+	      alpha[i] = MIN(MAX(alpha[i] - G/QD[i], 0.0), C - alpha_sum[slackid] + alpha[i]);
 
-	d = alpha[i] - alpha_old;
+	      d = alpha[i] - alpha_old;
         alpha_sum[slackid] += d;
         add_vector_ns(model->lin_weights, docs[i]->fvec, d);
       }
@@ -1616,15 +1616,15 @@ void svm_learn_optimization_linear(DOC **docs, double *rhs, long int totdoc, lon
     if(PGmax_new - PGmin_new <= learn_parm->epsilon_crit)
     {
       if(active_size == totdoc)
-	break;
+	      break;
       else
       {
-	active_size = totdoc;
-	printf("*");
+	      active_size = totdoc;
+	      printf("*");
         fflush(stdout);
-	PGmax_old = PLUS_INFINITY;
-	PGmin_old = MINUS_INFINITY;
-	continue;
+	      PGmax_old = PLUS_INFINITY;
+	      PGmin_old = MINUS_INFINITY;
+	      continue;
       }
     }
     PGmax_old = PGmax_new;
@@ -1647,7 +1647,7 @@ void svm_learn_optimization_linear(DOC **docs, double *rhs, long int totdoc, lon
   {
     v += alpha[i]*(-2);
     if(alpha[i] > 0)
-    ++nSV;
+      ++nSV;
   }
   printf("Objective value = %lf\n",v/2);
   printf("nSV = %d\n",nSV);
