@@ -40,8 +40,8 @@ for i = 1:view_num
     im = visualizeHOG(w, 0);
     subplot(view_num/2, 4, 2*i-1);
     imagesc(im); 
-    h = title(pnames{index});
-    set(h, 'FontSize', 16);
+%     h = title(pnames{index});
+%     set(h, 'FontSize', 16);
     colormap gray;
     axis equal;
     axis off;
@@ -77,9 +77,10 @@ for i = 1:view_num
     
     subplot(view_num/2, 4, 2*i);
     imagesc(B); 
-    h = title([pnames{index} 'part']);
-    set(h, 'FontSize', 16);
+%     h = title([pnames{index} 'part']);
+%     set(h, 'FontSize', 16);
     colormap gray;
     axis equal;
     axis off;    
 end
+model.pairwise = reshape(model.weights(count:end), numel(pnames), numel(pnames)-1);
