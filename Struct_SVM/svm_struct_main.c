@@ -32,6 +32,7 @@ extern "C" {
 # include "svm_struct_learn.h"
 # include "svm_struct_common.h"
 # include "svm_struct_api.h"
+#include "svm_struct_api_types.h"
 
 #include <mpi.h>
 #include <stdio.h>
