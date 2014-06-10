@@ -407,7 +407,7 @@ void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfi
     exit(1);
   }
   fscanf(fp_negative, "%d\n", &num_neg);
-  printf("Number of negative samples: %d, %d samples used\n", num_neg, TRAIN_NEG_NUM);
+  printf("Number of negative samples: %d\n", num_neg);
 
   /* construct new training data and write to file */
   printf("Writing data to %s\n", filename);
@@ -455,6 +455,7 @@ void random_negative_samples(char *filename, char *trainfile_wrap, char *trainfi
   }  
 
   num_neg_used = TRAIN_NEG_NUM > num_neg/2 ? num_neg/2 : TRAIN_NEG_NUM;
+  printf("%d negative samples used\n", num_neg_used);
   fprintf(fp, "%d\n", num_pos_used + num_neg_used);
 
   /* randomly sample num_neg_used negative samples */
@@ -661,6 +662,7 @@ void data_mining_hard_examples(char *filename, char *trainfile, char *testfile, 
     fprintf(fp, "%d\n", ntrain);
     index_neg = 0;
     count_neg = TRAIN_NEG_NUM > ntest/2 ? ntest/2 : TRAIN_NEG_NUM;
+    printf("%d hard negative samples used\n", count_neg);
     for(i = 0; i < ntrain; i++)
     {
       fgets(line, BUFFLE_SIZE, ftrain);
