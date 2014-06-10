@@ -356,7 +356,7 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
                   fflush(stdout);
                 }
 	      
-	        /**** resize constraint matrix and add new constraint ****/
+	              /**** resize constraint matrix and add new constraint ****/
                 cset.m++;
                 cset.lhs = (DOC **)realloc(cset.lhs, sizeof(DOC *)*cset.m);
       	        if(kparm->kernel_type == LINEAR)
@@ -364,7 +364,7 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
                   diff = add_list_ss(fy); /* store difference vector directly */
                   if(sparm->slack_norm == 1) 
                     cset.lhs[cset.m-1] = create_example(cset.m-1, 0, init_slack+i+1, 1, copy_svector(diff));
-      		  else if(sparm->slack_norm == 2)
+      		        else if(sparm->slack_norm == 2)
                   {
                     /**** add squared slack variable to feature vector ****/
                     slackv[0].wnum = sizePsi + i;
@@ -372,15 +372,15 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
                     slackv[1].wnum = 0; /*terminator*/
                     slackvec = create_svector(slackv, "", 1.0);
                     cset.lhs[cset.m-1] = create_example(cset.m-1, 0, init_slack+i+1, 1, add_ss(diff,slackvec));
-       		    free_svector(slackvec);
+       		          free_svector(slackvec);
                   }
                   free_svector(diff);
                 }  
                 else   /* kernel is used */
                 { 
                   if(sparm->slack_norm == 1)
-       		    cset.lhs[cset.m-1]=create_example(cset.m-1, 0, init_slack+i+1, 1, copy_svector(fy));
-       		  else if(sparm->slack_norm == 2)
+       		          cset.lhs[cset.m-1]=create_example(cset.m-1, 0, init_slack+i+1, 1, copy_svector(fy));
+       		        else if(sparm->slack_norm == 2)
                     exit(1);
                 }
                 cset.rhs = (double *)realloc(cset.rhs, sizeof(double)*cset.m);
