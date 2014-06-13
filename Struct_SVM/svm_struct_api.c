@@ -502,7 +502,7 @@ void init_struct_model(SAMPLE sample, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm,
   }
 }
 
-CONSTSET init_struct_constraints(SAMPLE sample, double **alpha, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm)
+CONSTSET init_struct_constraints(SAMPLE sample, double **alpha, long **alphahist, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm)
 {
   /* Initializes the optimization problem. Typically, you do not need
      to change this function, since you want to start with an empty
@@ -553,19 +553,23 @@ CONSTSET init_struct_constraints(SAMPLE sample, double **alpha, STRUCTMODEL *sm,
         words[0].wnum = start+1;
         words[0].weight = -1.0;
         words[1].wnum = 0;
-        c.lhs[count] = create_example(count, 0, count, 1, create_svector(words,"",1.0));
-        c.rhs[count] = 0.0;
+        c.lhs[count] = create_example(count, 0, count+1, 1, create_svector(words,"",1.0));
+        c.rhs[count] = 0.01;
         count++;
         start++;
       }
     }
     *alpha = (double*)my_malloc(sizeof(double)*num);
     memset(*alpha, 0, sizeof(double)*num);
+
+    *alphahist = (long*)my_malloc(sizeof(long)*num);
+    for(i = 0; i < num; i++)
+      (*alphahist)[i] = -1;
   }
   else /* add constraints so that all learned weights are positive. WARNING: Currently, they are positive only up to precision epsilon set by -e. */
   {
     printf("Initialize constraints from file %s\n", sparm->confile_read);
-    c = read_constraints(sparm->confile_read, alpha, sm, sparm);
+    c = read_constraints(sparm->confile_read, alpha, alphahist, sm, sparm);
   }
   printf("Initialization done, %d constraints read\n", c.m);
   return(c);
@@ -2193,7 +2197,7 @@ void write_weights(STRUCTMODEL *sm)
   fflush(sm->fp);
 }
 
-void write_constraints(CONSTSET cset, double *alpha, STRUCT_LEARN_PARM *sparm)
+void write_constraints(CONSTSET cset, double *alpha, long *alphahist, STRUCT_LEARN_PARM *sparm)
 {
   int i;
   SVECTOR *fvec;
@@ -2213,6 +2217,11 @@ void write_constraints(CONSTSET cset, double *alpha, STRUCT_LEARN_PARM *sparm)
   for(i = 0; i < cset.m; i++)
     fprintf(fp, "%.32f ", alpha[i]);
   fprintf(fp, "\n");
+
+  /* alphahist */
+  for(i = 0; i < cset.m; i++)
+    fprintf(fp, "%ld ", alphahist[i]);
+  fprintf(fp, "\n");
   
   /* constraints */
   for(i = 0; i < cset.m; i++)
@@ -2231,7 +2240,7 @@ void write_constraints(CONSTSET cset, double *alpha, STRUCT_LEARN_PARM *sparm)
   fclose(fp);
 }
 
-CONSTSET read_constraints(char *file, double **alpha, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm)
+CONSTSET read_constraints(char *file, double **alpha, long **alphahist, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm)
 {
   CONSTSET c;
   int     i, wnum, wpos, slackid;
@@ -2250,13 +2259,18 @@ CONSTSET read_constraints(char *file, double **alpha, STRUCTMODEL *sm, STRUCT_LE
   fscanf(fp, "%lf", &(sparm->epsilon_init));
   
   /* alpha */
-  *alpha = my_malloc(sizeof(double)*c.m);
+  *alpha = (double*)my_malloc(sizeof(double)*c.m);
   for(i = 0; i < c.m; i++)
     fscanf(fp, "%lf", &((*alpha)[i]));
 
+  /* alphahist */
+  *alphahist = (long*)my_malloc(sizeof(long)*c.m);
+  for(i = 0; i < c.m; i++)
+    fscanf(fp, "%ld", &((*alphahist)[i]));
+
   /* constraints */
-  c.lhs = my_malloc(sizeof(DOC *)*c.m);
-  c.rhs = my_malloc(sizeof(double)*c.m);
+  c.lhs = (DOC**)my_malloc(sizeof(DOC *)*c.m);
+  c.rhs = (double*)my_malloc(sizeof(double)*c.m);
   for(i = 0; i < c.m; i++)
   {
     fscanf(fp, "%d", &slackid);
