@@ -93,7 +93,7 @@ GENCODE_FLAGS   := $(GENCODE_SM10) $(GENCODE_SM20) $(GENCODE_SM30)
 CC = gcc
 LD = gcc
 
-CFLAGS = -O3 -Wall
+CFLAGS = -O3 -Wall -g
 LDCFLAGS = -O3 -lm -Wall
 
 INCLUDES += -I$(MPI_INCLUDES)

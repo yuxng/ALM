@@ -120,14 +120,14 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
 
   if(rank == 0)
   {
-    cset = init_struct_constraints(sample, &alpha, sm, sparm);
+    cset = init_struct_constraints(sample, &alpha, &alphahist, sm, sparm);
     init_slack = 0;
     if(cset.m > 0)
     {
-      alphahist = (long*)realloc(alphahist, sizeof(long)*cset.m);
       for(i = 0; i < cset.m; i++)
       {
-        alphahist[i] = -1; /* -1 makes sure these constraints are never removed */
+        if(alphahist[i] != -1) /* -1 makes sure these constraints are never removed */
+          alphahist[i] = optcount;
         if(cset.lhs[i]->slackid > init_slack)
           init_slack = cset.lhs[i]->slackid;
       }
@@ -489,7 +489,7 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
             printf("Reducing working set...");
             fflush(stdout);
           }
-          remove_inactive_constraints(&cset, alpha, optcount, alphahist, MAX(10, optcount-lastoptcount));
+          remove_inactive_constraints(&cset, alpha, optcount, alphahist, MAX(5, optcount-lastoptcount));
           lastoptcount = optcount;
           if(struct_verbosity >= 2)
             printf("done. (NumConst=%d)\n", cset.m);
@@ -549,7 +549,7 @@ void svm_learn_struct(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm
   /* save the precision for future learning */
   sparm->epsilon_init = epsilon;
   if(rank == 0)
-    write_constraints(cset, alpha, sparm);
+    write_constraints(cset, alpha, alphahist, sparm);
 
   print_struct_learning_stats(sample, sm, cset, alpha, sparm);
 
@@ -643,10 +643,9 @@ void svm_learn_struct_joint(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM 
   /* initialize constraint set */
   if(rank == 0)
   {
-    cset = init_struct_constraints(sample, &alpha, sm, sparm);
+    cset = init_struct_constraints(sample, &alpha, &alphahist, sm, sparm);
     if(cset.m > 0) 
     {
-      alphahist = (long *)realloc(alphahist,sizeof(long)*cset.m);
       for(i = 0; i < cset.m; i++) 
       {
         alphahist[i] = -1; /* -1 makes sure these constraints are never removed */
@@ -1119,7 +1118,7 @@ void svm_learn_struct_joint(SAMPLE sample, STRUCT_LEARN_PARM *sparm, LEARN_PARM 
   sparm->epsilon_init = epsilon;
 
   if(rank == 0)
-    write_constraints(cset, alpha, sparm);
+    write_constraints(cset, alpha, alphahist, sparm);
   MPI_Barrier(MPI_COMM_WORLD);
 
   if(rank == 0)
