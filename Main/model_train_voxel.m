@@ -22,8 +22,8 @@ cd(root_path);
 
 is_flip = 1;
 % small number for debugging
-maxnum = 12;
-data_dir = 'data_debug';
+maxnum = inf;
+data_dir = 'data';
 
 % load cad model, currently only one cad model for all the categories
 cad_num = 1;
