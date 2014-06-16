@@ -6,8 +6,8 @@ cad.is_2dpart = 1;
 cad.distance_minpixel = 30;
 cad.distance_maxpixel = 800;
 cad.view_num = 8;
-cad.subpart_num = 6;
-cad.subpart_size = [3, 2];
+cad.subpart_num = 4;
+cad.subpart_size = [2, 2];
 cad.hog_size = 6;
 cad.viewport = 3000;
 cad.occ_per = 0.8;
@@ -56,8 +56,8 @@ cad.parts2d = parts2d;
 % discretize the viewpoint
 function [azimuth, elevation, distance] = discretize_viewpoint(cad)
 
-% azimuth = 0:15:345;
-azimuth = 0:45:315;
+azimuth = 0:15:345;
+% azimuth = 0:45:315;
 
 [~, e_imagenet, d_imagenet, w_imagenet] = viewpoint_distribution(cad.cls, 1);
 [~, e_pascal, d_pascal, w_pascal] = viewpoint_distribution(cad.cls, 0);
