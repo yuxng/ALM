@@ -143,7 +143,8 @@ void distance_transform_2D(CUMATRIX M, CUMATRIX V, CUMATRIX L, int sbin, float d
 /*
     distance_transform_1D(src, dst, location, ny, bias, wy*sbin*sbin);
 */
-    distance_transform_1D(src, dst, location, ny, bias, wy/(bias*bias));
+    distance_transform_1D(src, dst, location, ny, bias, wy/((bias+1) * (bias+1)));
+
     src += ny;
     dst += ny;
     location += ny;
@@ -164,7 +165,8 @@ void distance_transform_2D(CUMATRIX M, CUMATRIX V, CUMATRIX L, int sbin, float d
 /*
     distance_transform_1D(src, dst, location, nx, bias, wx*sbin*sbin);
 */
-    distance_transform_1D(src, dst, location, nx, bias, wx/(bias*bias));
+    distance_transform_1D(src, dst, location, nx, bias, wx/((bias+1) * (bias+1)));
+
     src += nx;
     dst += nx;
     location += nx;
