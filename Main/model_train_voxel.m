@@ -23,7 +23,7 @@ cd(root_path);
 is_flip = 1;
 % small number for debugging
 maxnum = inf;
-data_dir = 'data';
+data_dir = 'data_voxel';
 
 % load cad model, currently only one cad model for all the categories
 cad_num = 1;

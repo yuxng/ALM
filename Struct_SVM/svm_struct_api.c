@@ -2034,11 +2034,19 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
         theta = atan2(cy2-cy1, cx2-cx1);
 
         words[wpos].wnum = wnum;
-        words[wpos].weight = sparm->wpair * pow((x1 - x2 + dis*cos(theta)) / (dis*cos(theta)), 2.0);  /* x distance difference */
+
+        words[wpos].weight = sparm->wpair * pow((x1 - x2 + dis*cos(theta)) / (dis*cos(theta) + cad->part_templates[0]->sbin), 2.0);
+/*
+        words[wpos].weight = sparm->wpair * pow(x1 - x2 + dis*cos(theta), 2.0);
+*/
         wpos++;
         wnum++;
         words[wpos].wnum = wnum;
-        words[wpos].weight = sparm->wpair * pow((y1 - y2 + dis*sin(theta)) / (dis*sin(theta)), 2.0);  /* y distance difference */
+
+        words[wpos].weight = sparm->wpair * pow((y1 - y2 + dis*sin(theta)) / (dis*sin(theta) + cad->part_templates[0]->sbin), 2.0);
+/*
+        words[wpos].weight = sparm->wpair * pow(y1 - y2 + dis*sin(theta), 2.0);
+*/
         wpos++;
         wnum++;
       }

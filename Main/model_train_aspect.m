@@ -20,9 +20,10 @@ cd('..');
 addpath(pwd);
 cd(root_path);
 
-is_flip = 0;
+is_flip = 1;
 % small number for debugging
 maxnum = 12;
+data_dir = 'data_debug';
 
 % load cad model, currently only one cad model for all the categories
 cad_num = 1;
@@ -31,7 +32,7 @@ object = load(sprintf('../Geometry/Aspect/%s.mat', cls_data));
 cad{1} = object.(cls_data);
 
 % write cad model to file
-filename = sprintf('data/%s.cad', cls_data);
+filename = sprintf('%s/%s.cad', data_dir, cls_data);
 write_cad(filename, cad);
 
 % wrap positive training images
@@ -50,11 +51,7 @@ neg = [];
 
 % write training samples to file
 fprintf('Writing wrapped positives\n');
-if is_flip
-    filename = sprintf('data/%s_wrap_flip.dat', cls_data);
-else
-    filename = sprintf('data/%s_wrap.dat', cls_data);
-end
+filename = sprintf('%s/%s_wrap.dat', data_dir, cls_data);
 write_data(filename, pos, neg);
 
 
@@ -74,23 +71,19 @@ neg = [];
 
 % write training samples to file
 fprintf('Writing unwrapped positives\n');
-if is_flip
-    filename = sprintf('data/%s_unwrap_flip.dat', cls_data);    
-else
-    filename = sprintf('data/%s_unwrap.dat', cls_data);
-end
+filename = sprintf('%s/%s_unwrap.dat', data_dir, cls_data);
 write_data(filename, pos, neg);
 
 
 % % sample negative training images for VOC pascal
 fprintf('Randomize negative PASCAL samples\n');
-maxnum = 24;
+maxnum = 48;
 neg = rand_negative(cls, maxnum);
 fprintf('%d negative samples\n', numel(neg));
 
 % write training samples to file
 fprintf('Writing negative samples\n');
-filename = sprintf('data/%s_neg.dat', cls_data);
+filename = sprintf('%s/%s_neg.dat', data_dir, cls_data);
 pos = [];
 write_data(filename, pos, neg);
 
@@ -140,7 +133,7 @@ for i = 1:N
         if strcmp(cls, object.class) == 0 || object.viewpoint.distance == 0 || ...
                 (isfield(object, 'difficult') == 1 && object.difficult == 1) || ...
                 (isempty(subtype) == 0 && strcmp(object.subtype, subtype) == 0) || ...  
-                is_occld_trunc(object) == 1
+                (is_wrap == 1 && is_occld_trunc(object) == 1)
 %                 is_trunc(object) == 1 || ...
 %                 object.viewpoint.distance > cads{1}.distance(end) || ...
 %                 object.viewpoint.distance < cads{1}.distance(1)           
@@ -156,6 +149,7 @@ for i = 1:N
         cad_index = object.cad_index;
         filename = fullfile(opt.path_alm, sprintf('%s_%02d.mat', cls, cad_index));
         if exist(filename) == 0
+            fprintf('%s does not exist\n', filename);
             continue;
         end
         alm = load(filename);
@@ -192,7 +186,7 @@ for i = 1:N
         end
         
         % wrap positive
-        if is_wrap == 0 || is_occld_trunc(object) == 1
+        if is_wrap == 0
             im = I;
             sx = 1;
             sy = 1;
