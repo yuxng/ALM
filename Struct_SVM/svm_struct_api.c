@@ -554,7 +554,7 @@ CONSTSET init_struct_constraints(SAMPLE sample, double **alpha, long **alphahist
         words[0].weight = -1.0;
         words[1].wnum = 0;
         c.lhs[count] = create_example(count, 0, count+1, 1, create_svector(words,"",1.0));
-        c.rhs[count] = 0.01;
+        c.rhs[count] = 0;
         count++;
         start++;
       }

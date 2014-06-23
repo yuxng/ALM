@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CLS=car
-DATADIR=../Main/data/
+DATADIR=../Main/data_aspect/
 
 # Perform tasks
 cat train_mpi.sh
