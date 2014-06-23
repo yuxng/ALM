@@ -1,7 +1,7 @@
 % show image with annotation
 function show_annotation_file(cls)
 
-path_file = sprintf('data_debug/%s_wrap.dat', cls);
+path_file = sprintf('data_aspect/%s_unwrap.dat', cls);
 
 % load CAD model
 object = load(sprintf('../Geometry/Aspect/%s.mat', cls));

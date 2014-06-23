@@ -6,7 +6,7 @@ dat_file = sprintf('data/%s.tst', cls_data);
 pre_file = sprintf('data/%s.pre', cls_data);
 
 % load cad model
-cad_file = sprintf('../Geometry/Voxel/%s.mat', cls);
+cad_file = sprintf('../Geometry/Aspect/%s.mat', cls);
 cad = load(cad_file);
 cad = cad.(cls);
 pnames = cad.pnames;
@@ -46,7 +46,7 @@ for i = 1:N
     hold on;
 
     til = sprintf('%d: ', i);
-    for k = 1:min(2, num)
+    for k = 1:min(1, num)
         % get predicted bounding box
         bbox_pr = examples{k}.bbox;
         if example.object_label == 1
