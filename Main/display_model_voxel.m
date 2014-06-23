@@ -1,4 +1,4 @@
-function model = display_model(filename, cls)
+function model = display_model_voxel(filename, cls)
 
 % load cad model
 cad_file = sprintf('../Geometry/Voxel/%s.mat', cls);
