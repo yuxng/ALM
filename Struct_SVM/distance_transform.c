@@ -123,7 +123,7 @@ void distance_transform_1D(float *f, float *d, float *l, int n, float bias, floa
 void distance_transform_2D(CUMATRIX M, CUMATRIX V, CUMATRIX L, int sbin, float dc, float ac, float wx, float wy)
 {
   int x, y, nx, ny;
-  float bias;
+  float bias, factor;
   float *dcolumn, *dtranspose, *drow, *lrow, *dst, *src, *location;
 
   dcolumn = (float*)malloc(sizeof(float)*V.length);
@@ -135,6 +135,10 @@ void distance_transform_2D(CUMATRIX M, CUMATRIX V, CUMATRIX L, int sbin, float d
 
   /* transform columns */
   bias = dc*sin(ac)/sbin;
+  if(bias > 0)
+    factor = bias + 1;
+  else
+    factor = bias - 1;
   src = V.data;
   dst = dcolumn;
   location = L.data + nx*ny;
@@ -143,7 +147,7 @@ void distance_transform_2D(CUMATRIX M, CUMATRIX V, CUMATRIX L, int sbin, float d
 /*
     distance_transform_1D(src, dst, location, ny, bias, wy*sbin*sbin);
 */
-    distance_transform_1D(src, dst, location, ny, bias, wy/((bias+1) * (bias+1)));
+    distance_transform_1D(src, dst, location, ny, bias, wy/(factor * factor));
 
     src += ny;
     dst += ny;
@@ -157,6 +161,10 @@ void distance_transform_2D(CUMATRIX M, CUMATRIX V, CUMATRIX L, int sbin, float d
 
   /* transform rows */
   bias = dc*cos(ac)/sbin;
+  if(bias > 0)
+    factor = bias + 1;
+  else
+    factor = bias - 1;
   src = dtranspose;
   dst = drow;
   location = lrow;
@@ -165,7 +173,7 @@ void distance_transform_2D(CUMATRIX M, CUMATRIX V, CUMATRIX L, int sbin, float d
 /*
     distance_transform_1D(src, dst, location, nx, bias, wx*sbin*sbin);
 */
-    distance_transform_1D(src, dst, location, nx, bias, wx/((bias+1) * (bias+1)));
+    distance_transform_1D(src, dst, location, nx, bias, wx/(factor * factor));
 
     src += nx;
     dst += nx;
