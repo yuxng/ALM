@@ -554,7 +554,7 @@ CONSTSET init_struct_constraints(SAMPLE sample, double **alpha, long **alphahist
         words[0].weight = -1.0;
         words[1].wnum = 0;
         c.lhs[count] = create_example(count, 0, count+1, 1, create_svector(words,"",1.0));
-        c.rhs[count] = 0;
+        c.rhs[count] = 0.01;
         count++;
         start++;
       }
@@ -1806,7 +1806,7 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
   int i, j, k, wpos, wnum, part_index, sbin;
   int indexi, indexj;
   int *part_feature_index;
-  float part_score, score, bias;
+  float part_score, score, bias, factor;
   float cxprim, cyprim;
   float cx, cy;
   float x1, y1, x2, y2;
@@ -2036,14 +2036,18 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
         
         /* x direction */
         bias = dis*cos(theta);
+        if(bias > 0)
+          factor = bias + sbin;
+        else
+          factor = bias - sbin;
         if(is_max == 0)
-          score = pow((x1 - x2 + bias) / (bias + sbin), 2.0);
+          part_score = pow((x1 - x2 + bias) / factor, 2.0);
         else
         {
           part_score = PLUS_INFINITY;
           for(k = 0; k < FEATURE_NUM; k++)
           {
-            score = pow(((x1 + FEATURE_INDEX[k][0]*sbin/2) - (x2 + FEATURE_INDEX[k][1]*sbin/2) + bias) / (bias + sbin), 2.0);
+            score = pow(((x1 + FEATURE_INDEX[k][0]*sbin/2) - (x2 + FEATURE_INDEX[k][1]*sbin/2) + bias) / factor, 2.0);
             if(score < part_score)
               part_score = score;
           }
@@ -2055,14 +2059,18 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
 
         /* y direction */
         bias = dis*sin(theta);
+        if(bias > 0)
+          factor = bias + sbin;
+        else
+          factor = bias - sbin;
         if(is_max == 0)
-          score = pow((y1 - y2 + bias) / (bias + sbin), 2.0);
+          part_score = pow((y1 - y2 + bias) / factor, 2.0);
         else
         {
           part_score = PLUS_INFINITY;
           for(k = 0; k < FEATURE_NUM; k++)
           {
-            score = pow(((y1 + FEATURE_INDEX[k][0]*sbin/2) - (y2 + FEATURE_INDEX[k][1]*sbin/2) + bias) / (bias + sbin), 2.0);
+            score = pow(((y1 + FEATURE_INDEX[k][0]*sbin/2) - (y2 + FEATURE_INDEX[k][1]*sbin/2) + bias) / factor, 2.0);
             if(score < part_score)
               part_score = score;
           }
