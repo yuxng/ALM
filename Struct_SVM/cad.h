@@ -32,6 +32,9 @@ typedef struct object2d
   float distance;
   /* viewport size */
   int viewport_size;
+  /* 2D size */
+  float width;
+  float height;
   /* number of object parts */
   int part_num;
   /* part location */

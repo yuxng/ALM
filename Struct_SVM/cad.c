@@ -15,6 +15,7 @@ CAD* read_cad(FILE *fp, int hog_length)
   int i, j, k, part_num, view_num, root_index;
   CAD *cad;
   char buffer[256];
+  float xx, yy, x1, y1, x2, y2;
 
   /* allocate memory */
   cad = (CAD*)malloc(sizeof(CAD));
@@ -177,6 +178,33 @@ CAD* read_cad(FILE *fp, int hog_length)
           fscanf(fp, "%f", &(cad->objects2d[i]->part_shapes[j][k]));
       }
     }
+
+    /* compute the width and height */
+    x1 = PLUS_INFINITY;
+    x2 = MINUS_INFINITY;
+    y1 = PLUS_INFINITY;
+    y2 = MINUS_INFINITY;
+
+    for(j = 0; j < part_num; j++)
+    {
+      if(cad->objects2d[i]->occluded[j] == 0)
+      {
+        for(k = 0; k < 4; k++)
+        {
+          xx = cad->objects2d[i]->part_shapes[j][k] + cad->objects2d[i]->part_locations[j];
+          x1 = (x1 > xx ? xx : x1);
+          x2 = (x2 > xx ? x2 : xx);
+        }
+        for(k = 0; k < 4; k++)
+        {
+          yy = cad->objects2d[i]->part_shapes[j][k+4] + cad->objects2d[i]->part_locations[j+part_num];
+          y1 = (y1 > yy ? yy : y1);
+          y2 = (y2 > yy ? y2 : yy);
+        }
+      }
+    }
+    cad->objects2d[i]->width = x2 - x1;
+    cad->objects2d[i]->height = y2 - y1;
 
     /* read graph */
     cad->objects2d[i]->graph = (int**)malloc(sizeof(int*)*part_num);

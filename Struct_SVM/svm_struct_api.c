@@ -1651,7 +1651,7 @@ void child_to_parent(TREENODE *node, TREENODE *parent, OBJECT2D *object2d, float
     V.data = v;
 
     /* distance transformation to compute the message */
-    distance_transform_2D(M, V, L, sbin, dc, ac, wx, wy);
+    distance_transform_2D(M, V, L, sbin, dc, ac, object2d->width, object2d->height, wx, wy);
 
     /* use GPU to compute the message */
     /*
@@ -2036,10 +2036,7 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
         
         /* x direction */
         bias = dis*cos(theta);
-        if(bias > 0)
-          factor = bias + sbin;
-        else
-          factor = bias - sbin;
+        factor = cad->objects2d[y.view_label]->width;
         if(is_max == 0)
           part_score = pow((x1 - x2 + bias) / factor, 2.0);
         else
@@ -2059,10 +2056,7 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
 
         /* y direction */
         bias = dis*sin(theta);
-        if(bias > 0)
-          factor = bias + sbin;
-        else
-          factor = bias - sbin;
+        factor = cad->objects2d[y.view_label]->height;
         if(is_max == 0)
           part_score = pow((y1 - y2 + bias) / factor, 2.0);
         else
