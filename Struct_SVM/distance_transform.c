@@ -120,7 +120,7 @@ void distance_transform_1D(float *f, float *d, float *l, int n, float bias, floa
   M: output message
   V: input potential
 */
-void distance_transform_2D(CUMATRIX M, CUMATRIX V, CUMATRIX L, int sbin, float dc, float ac, float wx, float wy)
+void distance_transform_2D(CUMATRIX M, CUMATRIX V, CUMATRIX L, int sbin, float dc, float ac, float width, float height, float wx, float wy)
 {
   int x, y, nx, ny;
   float bias, factor;
@@ -135,10 +135,7 @@ void distance_transform_2D(CUMATRIX M, CUMATRIX V, CUMATRIX L, int sbin, float d
 
   /* transform columns */
   bias = dc*sin(ac)/sbin;
-  if(bias > 0)
-    factor = bias + 1;
-  else
-    factor = bias - 1;
+  factor = height/sbin;
   src = V.data;
   dst = dcolumn;
   location = L.data + nx*ny;
@@ -161,10 +158,7 @@ void distance_transform_2D(CUMATRIX M, CUMATRIX V, CUMATRIX L, int sbin, float d
 
   /* transform rows */
   bias = dc*cos(ac)/sbin;
-  if(bias > 0)
-    factor = bias + 1;
-  else
-    factor = bias - 1;
+  factor = width/sbin;
   src = dtranspose;
   dst = drow;
   location = lrow;

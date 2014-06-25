@@ -10,6 +10,6 @@
 #include "matrix.h"
 
 void distance_transform_1D(float *f, float *d, float *l, int n, float bias, float w);
-void distance_transform_2D(CUMATRIX M, CUMATRIX V, CUMATRIX L, int sbin, float dc, float ac, float wx, float wy);
+void distance_transform_2D(CUMATRIX M, CUMATRIX V, CUMATRIX L, int sbin, float dc, float ac, float width, float height, float wx, float wy);
 
 #endif
