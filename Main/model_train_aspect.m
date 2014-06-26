@@ -55,24 +55,24 @@ filename = sprintf('%s/%s_wrap.dat', data_dir, cls_data);
 write_data(filename, pos, neg);
 
 
-% read unwrapped positive training images
-fprintf('Read unwrapped positive samples\n');
-is_wrap = 0;
-pos = read_positive(cls, subtype, is_imagenet, is_wrap, cad, maxnum);
-fprintf('%d unwrapped positive samples\n', numel(pos));
-
-if is_flip
-    % flip positive samples
-    pos_flip = flip_positive(pos, cad);
-    fprintf('%d flipped positive samples\n', numel(pos_flip));
-    pos = [pos pos_flip];
-end
-neg = [];
-
-% write training samples to file
-fprintf('Writing unwrapped positives\n');
-filename = sprintf('%s/%s_unwrap.dat', data_dir, cls_data);
-write_data(filename, pos, neg);
+% % read unwrapped positive training images
+% fprintf('Read unwrapped positive samples\n');
+% is_wrap = 0;
+% pos = read_positive(cls, subtype, is_imagenet, is_wrap, cad, maxnum);
+% fprintf('%d unwrapped positive samples\n', numel(pos));
+% 
+% if is_flip
+%     % flip positive samples
+%     pos_flip = flip_positive(pos, cad);
+%     fprintf('%d flipped positive samples\n', numel(pos_flip));
+%     pos = [pos pos_flip];
+% end
+% neg = [];
+% 
+% % write training samples to file
+% fprintf('Writing unwrapped positives\n');
+% filename = sprintf('%s/%s_unwrap.dat', data_dir, cls_data);
+% write_data(filename, pos, neg);
 
 
 % % sample negative training images for VOC pascal
@@ -169,6 +169,24 @@ for i = 1:N
             bbox = object.bbox;
             part_label(index,:) = [(bbox(1) + bbox(3))/2 (bbox(2) + bbox(4))/2];
         end
+        
+        % generate bounding box
+        if is_wrap
+            bbox = generate_bbox(cad, part2d, part_label);
+            
+            tmp = part_label;
+            tmp(index,:) = part2d.centers(index,:) - [cad.viewport/2 cad.viewport/2] ...
+                + [object.viewpoint.px object.viewpoint.py];
+            ba = generate_bbox(cad, part2d, tmp);
+            ba = [ba(1) ba(2) ba(1)+ba(3) ba(2)+ba(4)];
+            bb = [bbox(1) bbox(2) bbox(1)+bbox(3) bbox(2)+bbox(4)];
+            o = box_overlap(ba, bb);
+            if o < 0.6
+                continue;
+            end
+        else
+            bbox = [object.bbox(1) object.bbox(2) object.bbox(3)-object.bbox(1) object.bbox(4)-object.bbox(2)];
+        end        
  
         count = count + 1;
         % object label
@@ -177,13 +195,6 @@ for i = 1:N
         pos(count).cad_label = 1;
         % view label
         pos(count).view_label = view_label;
-        
-        % generate bounding box
-        if is_wrap
-            bbox = generate_bbox(cad, part2d, part_label);
-        else
-            bbox = [object.bbox(1) object.bbox(2) object.bbox(3)-object.bbox(1) object.bbox(4)-object.bbox(2)];
-        end
         
         % wrap positive
         if is_wrap == 0
