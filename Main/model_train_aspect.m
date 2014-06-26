@@ -55,24 +55,24 @@ filename = sprintf('%s/%s_wrap.dat', data_dir, cls_data);
 write_data(filename, pos, neg);
 
 
-% % read unwrapped positive training images
-% fprintf('Read unwrapped positive samples\n');
-% is_wrap = 0;
-% pos = read_positive(cls, subtype, is_imagenet, is_wrap, cad, maxnum);
-% fprintf('%d unwrapped positive samples\n', numel(pos));
-% 
-% if is_flip
-%     % flip positive samples
-%     pos_flip = flip_positive(pos, cad);
-%     fprintf('%d flipped positive samples\n', numel(pos_flip));
-%     pos = [pos pos_flip];
-% end
-% neg = [];
-% 
-% % write training samples to file
-% fprintf('Writing unwrapped positives\n');
-% filename = sprintf('%s/%s_unwrap.dat', data_dir, cls_data);
-% write_data(filename, pos, neg);
+% read unwrapped positive training images
+fprintf('Read unwrapped positive samples\n');
+is_wrap = 0;
+pos = read_positive(cls, subtype, is_imagenet, is_wrap, cad, maxnum);
+fprintf('%d unwrapped positive samples\n', numel(pos));
+
+if is_flip
+    % flip positive samples
+    pos_flip = flip_positive(pos, cad);
+    fprintf('%d flipped positive samples\n', numel(pos_flip));
+    pos = [pos pos_flip];
+end
+neg = [];
+
+% write training samples to file
+fprintf('Writing unwrapped positives\n');
+filename = sprintf('%s/%s_unwrap.dat', data_dir, cls_data);
+write_data(filename, pos, neg);
 
 
 % % sample negative training images for VOC pascal
