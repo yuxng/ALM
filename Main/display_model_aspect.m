@@ -43,3 +43,4 @@ for i = 1:part_num
     axis off;
     count = count + b0*b1*32+1;
 end
+model.pairwise = reshape(model.weights(count:end), numel(pnames), numel(pnames)-1);
