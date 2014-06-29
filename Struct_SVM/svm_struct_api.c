@@ -516,6 +516,7 @@ CONSTSET init_struct_constraints(SAMPLE sample, double **alpha, long **alphahist
   long i, j, start;
   WORD words[2];
   int num, len, count;
+  float *weights;
   CAD *cad;
 
   if(strlen(sparm->confile_read) == 0) /* normal case: start with empty set of constraints */ 
@@ -537,6 +538,10 @@ CONSTSET init_struct_constraints(SAMPLE sample, double **alpha, long **alphahist
       num += cad->part_num * (cad->part_num-1);
     }
 
+    weights = (float*)my_malloc(sizeof(float)*num);
+    memset(weights, 0, sizeof(float)*num);
+    compute_pairwise_variances(num, weights, sample, sm, sparm);
+
     c.m = num;
     c.lhs = my_malloc(sizeof(DOC *)*num);
     c.rhs = my_malloc(sizeof(double)*num);
@@ -554,7 +559,7 @@ CONSTSET init_struct_constraints(SAMPLE sample, double **alpha, long **alphahist
         words[0].weight = -1.0;
         words[1].wnum = 0;
         c.lhs[count] = create_example(count, 0, count+1, 1, create_svector(words,"",1.0));
-        c.rhs[count] = 0.01;
+        c.rhs[count] = weights[count];
         count++;
         start++;
       }
@@ -565,6 +570,8 @@ CONSTSET init_struct_constraints(SAMPLE sample, double **alpha, long **alphahist
     *alphahist = (long*)my_malloc(sizeof(long)*num);
     for(i = 0; i < num; i++)
       (*alphahist)[i] = -1;
+
+    free(weights);
   }
   else /* add constraints so that all learned weights are positive. WARNING: Currently, they are positive only up to precision epsilon set by -e. */
   {
@@ -573,6 +580,167 @@ CONSTSET init_struct_constraints(SAMPLE sample, double **alpha, long **alphahist
   }
   printf("Initialization done, %d constraints read\n", c.m);
   return(c);
+}
+
+
+/* compute the variances of the examples for pairwise potential */
+void compute_pairwise_variances(int num, float *weights, SAMPLE sample, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm)
+{
+  int i, j, n;
+  int *count;
+  float *mean, *variances;
+  float **potentials;
+  CAD *cad;
+
+  /* compute the pairwise potentials for examples */
+  n = sample.n;
+  potentials = (float**)my_malloc(sizeof(float*)*n);
+  for(i = 0; i < n; i++)
+  {
+    potentials[i] = (float*)my_malloc(sizeof(float)*num);
+    memset(potentials[i], 0, sizeof(float)*num);
+    compute_pairwise_potential(sample.examples[i].y, potentials[i], sm, sparm);
+  }
+
+  /* compute the mean of the pairwise potentials */
+  mean = (float*)my_malloc(sizeof(float)*num);
+  memset(mean, 0, sizeof(float)*num);
+  count = (int*)my_malloc(sizeof(int)*num);
+  memset(count, 0, sizeof(int)*num);
+  for(i = 0; i < n; i++)
+  {
+    for(j = 0; j < num; j++)
+    {
+      if(potentials[i][j])
+      {
+        count[j]++;
+        mean[j] += potentials[i][j];
+      }
+    }
+  }
+  for(i = 0; i < num; i++)
+  {
+    if(count[i])
+      mean[i] /= count[i];
+  }
+
+  /* comput the variance of the pairwise potentials */
+  variances = (float*)my_malloc(sizeof(float)*num);
+  for(i = 0; i < num; i++)
+  {
+    variances[i] = 0;
+    for(j = 0; j < n; j++)
+    {
+      if(potentials[j][i])
+        variances[i] += pow(potentials[j][i] - mean[i], 2.0);
+    }
+    if(count[i])
+      variances[i] /= count[i];
+  }
+
+  /* assign the weights */
+  for(i = 0; i < num; i++)
+  {
+    weights[i] = mean[i] + sqrt(variances[i]);
+    if(weights[i])
+      weights[i] = 0.1 / weights[i];
+  }
+
+  printf("pairwies mean and std\n");
+  for(i = 0; i < num; i++)
+    printf("%f:%f:%f(%d) ", mean[i], sqrt(variances[i]), weights[i], count[i]);
+  printf("\n");
+
+  /* clean up */
+  for(i = 0; i < n; i++)
+    free(potentials[i]);
+  free(potentials);
+  free(mean);
+  free(count);
+  free(variances);
+}
+
+
+/* compute the pairwise potential for a label */
+void compute_pairwise_potential(LABEL y, float *potential, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm)
+{
+  int i, j, wnum;
+  CAD *cad;
+  int indexi, indexj;
+  float bias, factor;
+  float x1, y1, x2, y2;
+  float cx1, cy1, cx2, cy2;
+  float dis, theta;
+
+  if(y.object_label == -1)
+    return;
+
+  cad = sm->cads[y.cad_label];
+
+  wnum = 0;
+  for(i = 0; i < y.cad_label; i++)
+    wnum += sm->cads[i]->part_num * (sm->cads[i]->part_num - 1);
+
+  /* pairwise features */
+  for(i = 0; i < cad->part_num; i++)
+  {
+    for(j = i+1; j < cad->part_num; j++)
+    {
+      /* from child to parent */
+      if(cad->objects2d[y.view_label]->graph[i][j] == 1)
+      {
+        indexi = j;
+        indexj = i;
+      }
+      else if(cad->objects2d[y.view_label]->graph[j][i] == 1)
+      {
+        indexi = i;
+        indexj = j;
+      }
+      else
+      {
+        indexi = -1;
+        indexj = -1;
+      }
+
+      if(indexi != -1 && indexj != -1)
+      {
+        /* part centers */
+        x1 = y.part_label[indexi];
+        y1 = y.part_label[cad->part_num+indexi];
+        x2 = y.part_label[indexj];
+        y2 = y.part_label[cad->part_num+indexj];
+
+        cx1 = cad->objects2d[y.view_label]->part_locations[indexi];
+        cy1 = cad->objects2d[y.view_label]->part_locations[cad->part_num+indexi];
+        cx2 = cad->objects2d[y.view_label]->part_locations[indexj];
+        cy2 = cad->objects2d[y.view_label]->part_locations[cad->part_num+indexj];
+
+        /* distance and angle between parts projected from cad model */
+        dis = sqrt((cx1-cx2)*(cx1-cx2) + (cy1-cy2)*(cy1-cy2));
+        theta = atan2(cy2-cy1, cx2-cx1);
+        
+        /* x direction */
+        bias = dis*cos(theta);
+        factor = cad->objects2d[y.view_label]->width;
+        potential[wnum] = sparm->wpair * pow((x1 - x2 + bias) / factor, 2.0);
+        wnum++;
+
+        /* y direction */
+        bias = dis*sin(theta);
+        factor = cad->objects2d[y.view_label]->height;
+        potential[wnum] = sparm->wpair * pow((y1 - y2 + bias) / factor, 2.0);
+        wnum++;
+      }
+      else
+      {
+        potential[wnum] = 0;
+        wnum++;
+        potential[wnum] = 0;
+        wnum++;
+      }
+    }
+  }
 }
 
 LABEL* classify_struct_example(PATTERN x, int *label_num, int flag, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm)

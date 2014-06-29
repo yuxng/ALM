@@ -22,12 +22,12 @@ M = numel(ids);
 
 % load cad model
 cls_data = [cls ''];
-cad_file = sprintf('../Geometry/Voxel/%s.mat', cls_data);
+cad_file = sprintf('../Geometry/Aspect/%s.mat', cls_data);
 cad = load(cad_file);
 cad = cad.(cls_data);
 
 % read detections
-pre_file = 'data/val.pre';
+pre_file = 'data_aspect/val.pre';
 fid = fopen(pre_file, 'r');
 examples = cell(M,1);
 for i = 1:M

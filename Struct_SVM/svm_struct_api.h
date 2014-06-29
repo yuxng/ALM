@@ -81,4 +81,7 @@ LABEL find_most_positive_constraint(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_
 void write_latent_positive(FILE *fp, LABEL y, CUMATRIX matrix, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm);
 EXAMPLE read_struct_example_one(FILE *fp, CUMATRIX *matrix_image, STRUCT_LEARN_PARM *sparm, STRUCTMODEL *sm);
 
+void compute_pairwise_potential(LABEL y, float *potential, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm);
+void compute_pairwise_variances(int num, float *weights, SAMPLE sample, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm);
+
 #endif
