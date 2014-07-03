@@ -2216,6 +2216,12 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
             if(score < part_score)
               part_score = score;
           }
+          for(k = 0; k < FEATURE_NUM; k++)
+          {
+            score = pow(((x1 + FEATURE_INDEX[k][0]*sbin) - (x2 + FEATURE_INDEX[k][1]*sbin) + bias) / factor, 2.0);
+            if(score < part_score)
+              part_score = score;
+          }
         }
         words[wpos].wnum = wnum;
         words[wpos].weight = sparm->wpair * part_score;
@@ -2233,6 +2239,12 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
           for(k = 0; k < FEATURE_NUM; k++)
           {
             score = pow(((y1 + FEATURE_INDEX[k][0]*sbin/2) - (y2 + FEATURE_INDEX[k][1]*sbin/2) + bias) / factor, 2.0);
+            if(score < part_score)
+              part_score = score;
+          }
+          for(k = 0; k < FEATURE_NUM; k++)
+          {
+            score = pow(((y1 + FEATURE_INDEX[k][0]*sbin) - (y2 + FEATURE_INDEX[k][1]*sbin) + bias) / factor, 2.0);
             if(score < part_score)
               part_score = score;
           }
