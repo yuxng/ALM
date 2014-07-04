@@ -1986,6 +1986,7 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
   DOC *doc;
 
   int FEATURE_INDEX[FEATURE_NUM][2] = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 0}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
+  float PAIRWISE_INDEX[FEATURE_NUM] = {-2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2};
 
   /* the feature of negative sample is zero */
   if(y.object_label == -1)
@@ -2212,13 +2213,7 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
           part_score = PLUS_INFINITY;
           for(k = 0; k < FEATURE_NUM; k++)
           {
-            score = pow(((x1 + FEATURE_INDEX[k][0]*sbin/2) - (x2 + FEATURE_INDEX[k][1]*sbin/2) + bias) / factor, 2.0);
-            if(score < part_score)
-              part_score = score;
-          }
-          for(k = 0; k < FEATURE_NUM; k++)
-          {
-            score = pow(((x1 + FEATURE_INDEX[k][0]*sbin) - (x2 + FEATURE_INDEX[k][1]*sbin) + bias) / factor, 2.0);
+            score = pow((x1  - (x2 + PAIRWISE_INDEX[k]*sbin) + bias) / factor, 2.0);
             if(score < part_score)
               part_score = score;
           }
@@ -2238,13 +2233,7 @@ SVECTOR* psi(PATTERN x, LABEL y, int is_max, STRUCTMODEL *sm, STRUCT_LEARN_PARM 
           part_score = PLUS_INFINITY;
           for(k = 0; k < FEATURE_NUM; k++)
           {
-            score = pow(((y1 + FEATURE_INDEX[k][0]*sbin/2) - (y2 + FEATURE_INDEX[k][1]*sbin/2) + bias) / factor, 2.0);
-            if(score < part_score)
-              part_score = score;
-          }
-          for(k = 0; k < FEATURE_NUM; k++)
-          {
-            score = pow(((y1 + FEATURE_INDEX[k][0]*sbin) - (y2 + FEATURE_INDEX[k][1]*sbin) + bias) / factor, 2.0);
+            score = pow((y1 - (y2 + PAIRWISE_INDEX[k]*sbin) + bias) / factor, 2.0);
             if(score < part_score)
               part_score = score;
           }
