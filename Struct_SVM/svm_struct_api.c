@@ -643,7 +643,7 @@ void compute_pairwise_variances(int num, float *weights, SAMPLE sample, STRUCTMO
   {
     weights[i] = mean[i] + 2*sqrt(variances[i]);
     if(weights[i])
-      weights[i] = 0.1 / weights[i];
+      weights[i] = 0.2 / weights[i];
   }
 
   printf("pairwies mean, std and weight\n");
